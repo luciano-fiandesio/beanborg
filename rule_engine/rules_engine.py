@@ -22,8 +22,11 @@ class RuleDef:
     rule: str
     account_from: str
     account_to: str
-    ignore_payee: str        
+    csv_index: int
+    ignore_payee: str
+    csv_value: str    
     ignore_string_at_pos: str
+
 
 class Rule_Init(Rule):
     def __init__(self, name, context): 
@@ -67,12 +70,14 @@ class RuleEngine:
         
                 yrules = yaml.load(f, Loader=yaml.FullLoader)['rules']
                 for yrule in yrules :
-                    rule_name = yrule["name"]
-                    xfrom = yrule.get("from")
-                    xto = yrule.get("to")
-                    xignore = yrule.get("ignore_payee")
+                    rule_name = yrule["name"] # rule name
+                    xfrom = yrule.get("from") # Account from
+                    xto = yrule.get("to") # Account to
+                    xpos = yrule.get("csv_index") # CSV index (base 0)
+                    xignore = yrule.get("ignore_payee") # Payee string to ignore
+                    xstring = yrule.get("csv_values") # semicolon separated strings
                     xignorepos = yrule.get("ignore_string_at_pos")
-                    self.rules[rule_name] = RuleDef(globals()[rule_name], xfrom, xto, xignore, xignorepos)
+                    self.rules[rule_name] = RuleDef(globals()[rule_name], xfrom, xto, xpos, xignore, xstring, xignorepos)
         except KeyError as ke:
             sys.exit('The rule file references a rule that does not exist: ' + str(ke))
         except:
@@ -84,6 +89,7 @@ class RuleEngine:
         
         for key in self.rules:
             if not final:
+                print("Executing rule: " + str(self.rules[key].rule))
                 rulez = self.rules[key].rule(key, self._ctx)
                 final, tx = rulez.execute(csv_line, tx, self.rules[key])
         

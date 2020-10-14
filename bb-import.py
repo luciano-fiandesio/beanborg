@@ -78,6 +78,7 @@ def get_account(row, args):
     """ get the account for the given csv line or use the specified account """
     if args.account:
         return args.account
+      
     return row[args.account_pos]
 
 

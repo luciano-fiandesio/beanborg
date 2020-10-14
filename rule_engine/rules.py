@@ -22,69 +22,6 @@ class Rule:
         if ruleDef.ignore_payee is None:
             raise Exception('Ignore by payee (ignore_payee) required for rule ' + ruleDef.rule.__name__) 
 
-
-class CB_Cash(Rule):
-    ''' commerzbank cash rule '''
-    ''' creates a cash entry '''
-
-    def __init__(self, name, context): 
-        
-        # invoking the __init__ of the parent class  
-        Rule.__init__(self, name, context)          
-
-    def execute(self, csv_line, tx = None, ruleDef = None  ):
-        
-        self.checkAccountFromTo(ruleDef)
-
-        if "auszahlung".lower() in csv_line[self.context.tx_type_pos].lower() or "Withdrawal".lower() in csv_line[self.context.tx_type_pos].lower():
-            cashPosting = [Posting(
-                account=ruleDef.account_from,
-                units=None,
-                cost=None,
-                price=None,
-                flag=None,
-                meta=None),
-            Posting(
-                account=ruleDef.account_to,
-                units=None,
-                cost=None,
-                price=None,
-                flag=None,
-                meta=None)]
-            return (True, tx._replace(postings=cashPosting))     
-
-        return (False,tx)
-        
-class CB_Credit_Card(Rule):
-    def __init__(self, name, context): 
-        
-        # invoking the __init__ of the parent class  
-        Rule.__init__(self, name, context)          
-
-    def execute(self, csv_line, tx = None,ruleDef = None ):
-        
-        # if type equals 'pippo' and payee contains 'bayer'
-        # accounts
-
-        if "ECHNUNG KREDITKARTE".lower() in csv_line[self.context.payee_pos].lower():
-            creditCardPosting = [Posting(
-                account='Assets:DE:CB:Laura:Current',
-                units=None,
-                cost=None,
-                price=None,
-                flag=None,
-                meta=None),
-            Posting(
-                account='Liabilities:DE:Master:Laura',
-                units=None,
-                cost=None,
-                price=None,
-                flag=None,
-                meta=None)]
-            return (True,tx._replace(postings=creditCardPosting))     
-
-        return (False,tx) 
-
 class CB_Salary(Rule):
 
     def __init__(self, name, context): 
@@ -93,9 +30,7 @@ class CB_Salary(Rule):
         Rule.__init__(self, name, context)          
 
     def execute(self, csv_line, tx = None,ruleDef = None ):
-        
-        # if type equals 'pippo' and payee contains 'bayer'
-        # accounts
+
 
         if csv_line[self.context.tx_type_pos].lower() == "Gutschrift".lower() and \
         "Bayer".lower() in csv_line[self.context.payee_pos].lower():
@@ -119,35 +54,44 @@ class CB_Salary(Rule):
 
         return (False, tx)
 
-class Amex_Credit_Card(Rule):
+
+class Set_Accounts(Rule):
+
     def __init__(self, name, context): 
-        
-        # invoking the __init__ of the parent class  
-        Rule.__init__(self, name, context)          
+        Rule.__init__(self, name, context)
 
-    def execute(self, csv_line, tx = None,ruleDef = None ):
+    def execute(self, csv_line, tx ,ruleDef = None):
         
-        # if type equals 'pippo' and payee contains 'bayer'
-        # accounts
+        # current value at index for the current row
+        csv_field_val = csv_line[ruleDef.csv_index].lower()
 
-        if "American Express Europe".lower() in csv_line[self.context.payee_pos].lower():
-            creditCardPosting = [Posting(
-                account='Assets:DE:CB:Luciano:Current',
+        # values specified in the rule definition
+        vals = ruleDef.csv_value.split(";")
+
+        match = False
+        for val in vals:
+            if val.lower() in csv_field_val:
+                match = True
+
+        if match:
+            newPosting = [Posting(
+                account=ruleDef.account_from,
                 units=None,
                 cost=None,
                 price=None,
                 flag=None,
                 meta=None),
             Posting(
-                account='Liabilities:DE:Amex:Luciano',
+                account=ruleDef.account_to,
                 units=None,
                 cost=None,
                 price=None,
                 flag=None,
                 meta=None)]
-            return (True,tx._replace(postings=creditCardPosting))     
 
-        return (False,tx) 
+            return (True, tx._replace(postings=newPosting))     
+
+        return (False,tx)                
 
 class Replace_Payee(Rule):
     def __init__(self, name, context): 
@@ -203,13 +147,10 @@ class Ignore_By_StringAtPos(Rule):
 
     def execute(self, csv_line, tx = None, ruleDef = None ):
 
-        #self.checkIgnorePayee(ruleDef)
         for ignorable in ruleDef.ignore_string_at_pos:
             pos = int(ignorable.split(';')[1])
             strToIgnore = ignorable.split(';')[0]
-            #print (pos)   
-            #print (strToIgnore)
-            #print (csv_line[pos]) 
+            
             if strToIgnore.lower() == csv_line[pos].lower():
                 return (True, None) 
             
