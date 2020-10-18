@@ -51,6 +51,7 @@ def init_rule_engine(args):
         account_pos=args.account_pos,
         account=args.account,
         rules=args.rules_folder + '/' + args.rules_file,
+        rules_dir=args.rules_folder,
         assets=init_decision_table(args.rules_folder + '/asset.rules'),
         accounts=init_decision_table(args.rules_folder + '/account.rules'),
         payees=init_decision_table(args.rules_folder + '/payee.rules')))
@@ -78,7 +79,7 @@ def get_account(row, args):
     """ get the account for the given csv line or use the specified account """
     if args.account:
         return args.account
-      
+
     return row[args.account_pos]
 
 

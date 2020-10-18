@@ -22,39 +22,6 @@ class Rule:
         if ruleDef.ignore_payee is None:
             raise Exception('Ignore by payee (ignore_payee) required for rule ' + ruleDef.rule.__name__) 
 
-class CB_Salary(Rule):
-
-    def __init__(self, name, context): 
-        
-        # invoking the __init__ of the parent class  
-        Rule.__init__(self, name, context)          
-
-    def execute(self, csv_line, tx = None,ruleDef = None ):
-
-
-        if csv_line[self.context.tx_type_pos].lower() == "Gutschrift".lower() and \
-        "Bayer".lower() in csv_line[self.context.payee_pos].lower():
-
-            salaryPosting = [Posting(
-                account='Assets:DE:CB:Laura:Current',
-                units=None,
-                cost=None,
-                price=None,
-                flag=None,
-                meta=None),
-            Posting(
-                account='Income:Salary:Bayer',
-                units=None,
-                cost=None,
-                price=None,
-                flag=None,
-                meta=None)]
-
-            return (True, tx._replace(postings=salaryPosting))  
-
-        return (False, tx)
-
-
 class Set_Accounts(Rule):
 
     def __init__(self, name, context): 

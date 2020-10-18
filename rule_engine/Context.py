@@ -4,7 +4,7 @@ from dataclasses import dataclass
 class Context:
     # rule file
     rules: str
-
+    rules_dir: str
     date_fomat: str
     default_expense: str
     date_pos: int

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys
+import sys, inspect
 import traceback
 from enum import Enum 
 from beancount.core.data import Transaction, Posting, Amount, Close, Open, EMPTY_SET
@@ -13,6 +13,10 @@ from rule_engine.rules import *
 from dataclasses import dataclass
 
 import os
+import re
+import importlib
+from importlib import import_module
+import fnmatch
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -63,13 +67,18 @@ class Rule_Init(Rule):
 class RuleEngine:
 
     def __init__(self, ctx: Context):
+        
         self._ctx = ctx
         self.rules = {}
+
+        custom_rules = self.load_custom_rules() 
+
         try:
             with open(os.getcwd() + '/' + self._ctx.rules) as f:
         
                 yrules = yaml.load(f, Loader=yaml.FullLoader)['rules']
                 for yrule in yrules :
+                    
                     rule_name = yrule["name"] # rule name
                     xfrom = yrule.get("from") # Account from
                     xto = yrule.get("to") # Account to
@@ -77,11 +86,34 @@ class RuleEngine:
                     xignore = yrule.get("ignore_payee") # Payee string to ignore
                     xstring = yrule.get("csv_values") # semicolon separated strings
                     xignorepos = yrule.get("ignore_string_at_pos")
-                    self.rules[rule_name] = RuleDef(globals()[rule_name], xfrom, xto, xpos, xignore, xstring, xignorepos)
+                    
+                    if rule_name in custom_rules:
+                        #print('custom-rule')
+                        self.rules[rule_name] = RuleDef(custom_rules[rule_name], xfrom, xto, xpos, xignore, xstring, xignorepos) 
+                    else:    
+                        self.rules[rule_name] = RuleDef(globals()[rule_name], xfrom, xto, xpos, xignore, xstring, xignorepos) 
+
         except KeyError as ke:
             sys.exit('The rule file references a rule that does not exist: ' + str(ke))
-        except:
+               
+        except Exception as e:
+            #print(str(e))
             sys.exit('The rule file ' + self._ctx.rules + ' is invalid!')
+        
+    def load_custom_rules(self):
+
+        custom_rulez = {}
+        sys.path.append(os.getcwd() + '/' + self._ctx.rules_dir)
+        custom_rules = fnmatch.filter(os.listdir(os.getcwd() + '/' + self._ctx.rules_dir), '*.py')
+        for r in custom_rules:   
+            mod_name = r[:-3]
+            mod = __import__(mod_name, globals={})
+            class_ = getattr(mod, mod_name)
+            
+            custom_rulez[mod_name] = class_
+
+        return custom_rulez    
+        
     
     def execute(self, csv_line):
 
@@ -94,7 +126,6 @@ class RuleEngine:
                 final, tx = rulez.execute(csv_line, tx, self.rules[key])
         
         return tx    
-
 
 ## TEST CASES        
 
