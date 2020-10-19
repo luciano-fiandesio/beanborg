@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import abc
 from rule_engine.Context import Context
 from beancount.core.data import Transaction, Posting, Amount, Close, Open

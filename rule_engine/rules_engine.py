@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import sys, inspect
 import traceback
@@ -109,7 +110,7 @@ class RuleEngine:
             mod_name = r[:-3]
             mod = __import__(mod_name, globals={})
             class_ = getattr(mod, mod_name)
-            
+            # TODO check if custom rule is of type rule before adding
             custom_rulez[mod_name] = class_
 
         return custom_rulez    

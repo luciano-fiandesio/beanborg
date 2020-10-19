@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 __copyright__ = "Copyright (C) 2020  Luciano Fiandesio"
 __license__ = "GNU GPLv2"
@@ -21,6 +22,7 @@ from rule_engine.rules_engine import RuleEngine
 from rule_engine.Context import Context
 from rule_engine.decision_tables import init_decision_table
 
+
 def gen_datetime(min_year=1900, max_year=datetime.now().year):
     """ generate a datetime in format yyyy-mm-dd hh:mm:ss.000000 """
     start = datetime(min_year, 1, 1, 00, 00, 00)
@@ -33,15 +35,16 @@ def init_rule_engine(args):
 
     # make sure the rules folder exists
     if not os.path.isdir(args.rules_folder):
-        sys.exit('The rule folder ' + args.rules_folder +' does not exist!')
-    
-    # make sure the rules files exists    
+        sys.exit('The rule folder ' + args.rules_folder + ' does not exist!')
+
+    # make sure the rules files exists
     if not os.path.isfile(args.rules_folder + '/' + args.rules_file):
-        sys.exit('The rule file ' + args.rules_file +' does not exist!')
+        sys.exit('The rule file ' + args.rules_file + ' does not exist!')
 
     if (not os.path.isfile(args.rules_folder + '/asset.rules') and args.account is None):
-        sys.exit('Please specify an account id string (using the -a flag) or create an entry in the asset.rules file')
-        
+        sys.exit(
+            'Please specify an account id string (using the -a flag) or create an entry in the asset.rules file')
+
     return RuleEngine(Context(
         date_fomat=args.date_format,
         default_expense=args.default_expense,
@@ -105,6 +108,7 @@ def resolve_amount(row, args):
             val = "-" + val
     return D(val.replace(args.currency_sep, '.'))
 
+
 def init_arg_parser():
 
     parser = argparse.ArgumentParser(
@@ -158,8 +162,10 @@ def init_arg_parser():
                         required=False, default=0, type=int)
     parser.add_argument('-e', '--invert_negative',
                         required=False, default=0, type=int)
-    parser.add_argument('-v', '--debug', required=False, default=False, action='store_true')
+    parser.add_argument('-v', '--debug', required=False,
+                        default=False, action='store_true')
     return parser
+
 
 def main():
 
@@ -181,7 +187,6 @@ def main():
 
     if args.debug:
         print("found hashes:  " + str(tx_hashes))
-                
 
     accounts = set()
 
@@ -203,7 +208,8 @@ def main():
                 accounts.add(res_account)
 
                 if md5 not in tx_hashes:
-                    tx_date = datetime.strptime(row[args.date_pos].strip(), args.date_format)
+                    tx_date = datetime.strptime(
+                        row[args.date_pos].strip(), args.date_format)
                     tx_meta = {
                         'csv': ','.join(row),
                         'md5': md5
@@ -229,9 +235,10 @@ def main():
 
                         if args.debug:
                             print(tx)
-                        
+
                         if tx.postings[0].account is None:
-                            raise Exception("Unable to resolve the account, please check that the 'Replace_Asset' rule is in use for  this account")
+                            raise Exception(
+                                "Unable to resolve the account, please check that the 'Replace_Asset' rule is in use for  this account")
 
                         # generate a key based on:
                         # - the tx date
