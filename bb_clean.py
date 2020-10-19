@@ -49,8 +49,8 @@ def main():
             try:
                 dates.append(datetime.strptime(
                     row[args.date_pos].strip(), args.date_format))
-            except Exception as e:
-                print('error: ' + str(e))
+            except Exception as ex:
+                print('error: ' + str(ex))
 
     print(u'\u2713' + ' moving file to archive...')
     os.rename(target_csv, args.archive + '/' + args.bank + '_' +
