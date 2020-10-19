@@ -3,6 +3,7 @@
 
 from dataclasses import dataclass
 
+
 @dataclass
 class Context:
     # rule file
@@ -20,4 +21,3 @@ class Context:
     payees: ()
     assets: ()
     accounts: ()
-
