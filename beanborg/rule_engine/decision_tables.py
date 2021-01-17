@@ -4,7 +4,6 @@
 import csv
 import os
 
-
 def init_decision_table(file):
     table = {}
     if not os.path.isfile(os.getcwd() + "/" + file):
@@ -45,10 +44,8 @@ def resolve_from_decision_table(table, string, default):
 def _equals(string_a, string_b):
     return string_a == string_b
 
-
 def _startsWith(string_a, string_b):
     return string_a.startswith(string_b)
-
 
 def _endsWith(string_a, string_b):
     return string_a.endswith(string_b)
