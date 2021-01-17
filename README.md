@@ -7,18 +7,37 @@ Helper scripts for quick Plain Text Accounting using [Beancount](http://furius.c
 - Python 3
 - Beancount
 
-## Rationale and general structure
+## Goals
 
+The main goal of this set of scripts is to import transactions from a CSV file into the Beancount ledger and automatically assign the correct Expense account to the transaction.
 
+For instance, given the following CSV entry:
+
+```
+04.11.2020;04.11.2020;Direct Debit;"Fresh Food";-21,30;EUR;0000001;UK0000001444555
+```
+
+will be imported by assigning the Account "Expense:Grocery" to the transaction:
+
+```
+2020-11-04 * "Fresh Food" ""
+  csv: "04.11.2020,04.11.2020,Direct Debit,Fresh Food,-21,30,EUR,0000001,UK0000001444555"
+  md5: "60a54f6ed13ae7b7e70fd475eb677511"
+  Assets:Bank1:Bob:Current  -21.30 EUR
+  Expenses:Grocery      
+```
+
+The automatic categorization is rule-based. The scripts come with a set of standard rules, but it is possible to dynamically invoke custom rules.
 
 ## Workflow
 
 This set of scripts is based on a very specific workflow, which may or may not work for you.
+
 The workflow is based on 3 distinct stages:
 
-- Move bank CSV file into stage area
-- Import CSV file into Beancount ledger and categorize the transactions
-- Move bank CSV file into archive area
+- Move a downloaded bank CSV file into the stage area
+- Import the CSV file into Beancount ledger and automatically categorize the transactions
+- Move the bank CSV file into archive area
 
 ### Stage 1: move bank file
 

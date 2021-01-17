@@ -20,8 +20,7 @@ import importlib
 from importlib import import_module
 import fnmatch
 
-__location__ = os.path.realpath(
-    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 
 @dataclass
@@ -41,35 +40,39 @@ class Rule_Init(Rule):
 
     def execute(self, csv_line, transaction=None):
 
-        return (False, Transaction(
-            meta=None,
-            date=None,
-            flag='*',
-            payee=None,
-            narration=None,
-            tags=None,
-            links=None,
-            postings=[
-                Posting(
-                    account=None,
-                    units=None,
-                    cost=None,
-                    price=None,
-                    flag=None,
-                    meta=None),
-                Posting(
-                    account=None,
-                    units=None,
-                    cost=None,
-                    price=None,
-                    flag=None,
-                    meta=None),
-            ],
-        ))
+        return (
+            False,
+            Transaction(
+                meta=None,
+                date=None,
+                flag="*",
+                payee=None,
+                narration=None,
+                tags=None,
+                links=None,
+                postings=[
+                    Posting(
+                        account=None,
+                        units=None,
+                        cost=None,
+                        price=None,
+                        flag=None,
+                        meta=None,
+                    ),
+                    Posting(
+                        account=None,
+                        units=None,
+                        cost=None,
+                        price=None,
+                        flag=None,
+                        meta=None,
+                    ),
+                ],
+            ),
+        )
 
 
 class RuleEngine:
-
     def __init__(self, ctx: Context):
 
         self._ctx = ctx
@@ -78,9 +81,9 @@ class RuleEngine:
         custom_rules = self.load_custom_rules()
 
         try:
-            with open(os.getcwd() + '/' + self._ctx.rules) as f:
+            with open(os.getcwd() + "/" + self._ctx.rules) as f:
 
-                yrules = yaml.load(f, Loader=yaml.FullLoader)['rules']
+                yrules = yaml.load(f, Loader=yaml.FullLoader)["rules"]
                 for yrule in yrules:
 
                     rule_name = yrule["name"]  # rule name
@@ -96,25 +99,39 @@ class RuleEngine:
                     if rule_name in custom_rules:
                         # print('custom-rule')
                         self.rules[rule_name] = RuleDef(
-                            custom_rules[rule_name], xfrom, xto, xpos, xignore, xstring, xignorepos)
+                            custom_rules[rule_name],
+                            xfrom,
+                            xto,
+                            xpos,
+                            xignore,
+                            xstring,
+                            xignorepos,
+                        )
                     else:
                         self.rules[rule_name] = RuleDef(
-                            globals()[rule_name], xfrom, xto, xpos, xignore, xstring, xignorepos)
+                            globals()[rule_name],
+                            xfrom,
+                            xto,
+                            xpos,
+                            xignore,
+                            xstring,
+                            xignorepos,
+                        )
 
         except KeyError as ke:
-            sys.exit(
-                'The rule file references a rule that does not exist: ' + str(ke))
+            sys.exit("The rule file references a rule that does not exist: " + str(ke))
 
         except Exception as e:
             # print(str(e))
-            sys.exit('The rule file ' + self._ctx.rules + ' is invalid!')
+            sys.exit("The rule file " + self._ctx.rules + " is invalid!")
 
     def load_custom_rules(self):
 
         custom_rulez = {}
-        sys.path.append(os.getcwd() + '/' + self._ctx.rules_dir)
-        custom_rules = fnmatch.filter(os.listdir(
-            os.getcwd() + '/' + self._ctx.rules_dir), '*.py')
+        sys.path.append(os.getcwd() + "/" + self._ctx.rules_dir)
+        custom_rules = fnmatch.filter(
+            os.listdir(os.getcwd() + "/" + self._ctx.rules_dir), "*.py"
+        )
         for r in custom_rules:
             mod_name = r[:-3]
             mod = __import__(mod_name, globals={})
@@ -126,7 +143,7 @@ class RuleEngine:
 
     def execute(self, csv_line):
 
-        final, tx = Rule_Init('init', self._ctx).execute(csv_line)
+        final, tx = Rule_Init("init", self._ctx).execute(csv_line)
 
         for key in self.rules:
             if not final:
@@ -136,56 +153,59 @@ class RuleEngine:
 
         return tx
 
+
 # TEST CASES
 
 
 class Rules_Engine_Test(unittest.TestCase):
-
     def setUp(self):
-        rule_engine = RuleEngine(Context(
-            date_fomat='%d.%m.%Y',
-            default_expense='Expenses:Unknown',
-            date_pos=0,
-            payee_pos=3,
-            tx_type_pos=2,
-            account_pos=5,
-            rules='rules/laura.commerzbank.rules',
-            assets=init_decision_table('rules/asset.rules'),
-            accounts=init_decision_table('rules/account.rules'),
-            payees=init_decision_table('rules/payee.rules')))
+        rule_engine = RuleEngine(
+            Context(
+                date_fomat="%d.%m.%Y",
+                default_expense="Expenses:Unknown",
+                date_pos=0,
+                payee_pos=3,
+                tx_type_pos=2,
+                account_pos=5,
+                rules="rules/laura.commerzbank.rules",
+                assets=init_decision_table("rules/asset.rules"),
+                accounts=init_decision_table("rules/account.rules"),
+                payees=init_decision_table("rules/payee.rules"),
+            )
+        )
 
         self.rule_engine = rule_engine
 
     def test_cash_rule(self):
-        csv = '31.10.2019,b,auszahlung,a bc Bayer,x,DE03100400000608903100'
-        entries = csv.split(',')
+        csv = "31.10.2019,b,auszahlung,a bc Bayer,x,DE03100400000608903100"
+        entries = csv.split(",")
         tx = self.rule_engine.execute(entries)
         self.assertEqual(tx.postings[0].account, "Assets:DE:CB:Laura:Current")
         self.assertEqual(tx.postings[1].account, "Assets:DE:Laura:Cash")
 
     def test_salary_rule(self):
 
-        csv = '31.10.2019,b,Gutschrift,a bc Bayer,x,DE03100400000608903100'
-        entries = csv.split(',')
+        csv = "31.10.2019,b,Gutschrift,a bc Bayer,x,DE03100400000608903100"
+        entries = csv.split(",")
         tx = self.rule_engine.execute(entries)
         self.assertEqual(tx.postings[0].account, "Assets:DE:CB:Laura:Current")
         self.assertEqual(tx.postings[1].account, "Income:Salary:Bayer")
 
     def test_asset_replace(self):
 
-        csv = '31.10.2019,b,Lastschrift,Amazon,x,DE03100400000608903100'
-        entries = csv.split(',')
+        csv = "31.10.2019,b,Lastschrift,Amazon,x,DE03100400000608903100"
+        entries = csv.split(",")
         tx = self.rule_engine.execute(entries)
         self.assertEqual(tx.postings[0].account, "Assets:DE:CB:Laura:Current")
 
     def test_expense_replace(self):
 
-        csv = '31.10.2019,b,Lastschrift,EDEKA supermarket,x,DE03100400000608903100'
-        entries = csv.split(',')
+        csv = "31.10.2019,b,Lastschrift,EDEKA supermarket,x,DE03100400000608903100"
+        entries = csv.split(",")
         tx = self.rule_engine.execute(entries)
         self.assertEqual(tx.postings[0].account, "Assets:DE:CB:Laura:Current")
         self.assertEqual(tx.postings[1].account, "Expenses:Groceries")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
