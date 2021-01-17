@@ -23,9 +23,35 @@ def init_decision_table(file):
 
 
 def resolve_from_decision_table(table, string, default):
+    eq_check_func = {
+        "equals": _equals,
+        "startsWith": _startsWith,
+        "endsWith": _endsWith,
+        "contains": _contains,
+        "eq": _equals,
+        "sw": _startsWith,
+        "ew": _endsWith,
+        "co": _contains
+    }
     for k in table.keys():
         t = table[k]
-        if k in string:
+        eq_check = t[0]
+        if eq_check_func.get(t[0])(string, k):
             return t[1]
 
     return default
+
+
+def _equals(string_a, string_b):
+    return string_a == string_b
+
+
+def _startsWith(string_a, string_b):
+    return string_a.startswith(string_b)
+
+
+def _endsWith(string_a, string_b):
+    return string_a.endswith(string_b)
+
+def _contains(string_a, string_b):
+    return string_b in string_a 
