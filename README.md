@@ -80,7 +80,7 @@ Script to use: `bb-import.py`
 
 Arguments:
 
-General options
+### General options
 
 `-f`: path to the csv file to import
 
@@ -94,7 +94,7 @@ General options
 
 `-t`: Currency decimal separator. Default: `.`
 
-CSV file index options
+### CSV file index options
 
 `-d`: CSV file index for the date column. Default: `0`
 
@@ -108,8 +108,7 @@ CSV file index options
 
 `-x`: CSV file index for the transaction type column. Default: `2`
 
-
-Rule options
+### Rule options
 
 `-r`: path to the rules folder. Default: `rules`
 
@@ -117,7 +116,7 @@ Rule options
 
 `-k`: Default expense category. Default: `Expenses:Unknown`
 
-Other options
+### Other options
 
 `-a`: account identification string, in case the CSV file does't have it 
 
@@ -130,8 +129,6 @@ Other options
 `-g`: force negative -- TODO
 
 `-e`: invert negative -- TODO
-
-
 
 ## Sample data
 
