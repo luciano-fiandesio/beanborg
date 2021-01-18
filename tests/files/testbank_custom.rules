@@ -1,0 +1,6 @@
+rules:
+    
+    - 
+        name: My_Custom_Rule
+        from: Assets:UK:Alice:Savings
+        to: Assets:UK:Alice:Cash

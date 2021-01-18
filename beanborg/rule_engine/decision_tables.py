@@ -34,8 +34,8 @@ def resolve_from_decision_table(table, string, default):
     }
     for k in table.keys():
         t = table[k]
-        eq_check = t[0]
-        if eq_check_func.get(t[0])(string, k):
+        eq_check_type = t[0]
+        if eq_check_func.get(eq_check_type)(string, k):
             return t[1]
 
     return default

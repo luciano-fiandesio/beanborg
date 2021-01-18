@@ -8,6 +8,7 @@ from dataclasses import dataclass
 class Context:
     # rule file
     rules: str
+    # custom rules folder
     rules_dir: str
     date_fomat: str
     default_expense: str

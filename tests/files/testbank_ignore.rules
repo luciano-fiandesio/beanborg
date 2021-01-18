@@ -1,0 +1,7 @@
+rules:
+    
+    - 
+       name: Ignore_By_Payee
+       ignore_payee: 
+           - alfa
+           - beta

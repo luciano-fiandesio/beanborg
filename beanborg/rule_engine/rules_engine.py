@@ -7,11 +7,10 @@ import traceback
 from enum import Enum
 from beancount.core.data import Transaction, Posting, Amount, Close, Open, EMPTY_SET
 from datetime import datetime
-import unittest
 import importlib
 import yaml
-from rule_engine.Context import Context
-from rule_engine.rules import *
+from .Context import Context
+from .rules import *
 from dataclasses import dataclass
 
 import os
@@ -152,60 +151,3 @@ class RuleEngine:
                 final, tx = rulez.execute(csv_line, tx, self.rules[key])
 
         return tx
-
-
-# TEST CASES
-
-
-class Rules_Engine_Test(unittest.TestCase):
-    def setUp(self):
-        rule_engine = RuleEngine(
-            Context(
-                date_fomat="%d.%m.%Y",
-                default_expense="Expenses:Unknown",
-                date_pos=0,
-                payee_pos=3,
-                tx_type_pos=2,
-                account_pos=5,
-                rules="rules/laura.commerzbank.rules",
-                assets=init_decision_table("rules/asset.rules"),
-                accounts=init_decision_table("rules/account.rules"),
-                payees=init_decision_table("rules/payee.rules"),
-            )
-        )
-
-        self.rule_engine = rule_engine
-
-    def test_cash_rule(self):
-        csv = "31.10.2019,b,auszahlung,a bc Bayer,x,DE03100400000608903100"
-        entries = csv.split(",")
-        tx = self.rule_engine.execute(entries)
-        self.assertEqual(tx.postings[0].account, "Assets:DE:CB:Laura:Current")
-        self.assertEqual(tx.postings[1].account, "Assets:DE:Laura:Cash")
-
-    def test_salary_rule(self):
-
-        csv = "31.10.2019,b,Gutschrift,a bc Bayer,x,DE03100400000608903100"
-        entries = csv.split(",")
-        tx = self.rule_engine.execute(entries)
-        self.assertEqual(tx.postings[0].account, "Assets:DE:CB:Laura:Current")
-        self.assertEqual(tx.postings[1].account, "Income:Salary:Bayer")
-
-    def test_asset_replace(self):
-
-        csv = "31.10.2019,b,Lastschrift,Amazon,x,DE03100400000608903100"
-        entries = csv.split(",")
-        tx = self.rule_engine.execute(entries)
-        self.assertEqual(tx.postings[0].account, "Assets:DE:CB:Laura:Current")
-
-    def test_expense_replace(self):
-
-        csv = "31.10.2019,b,Lastschrift,EDEKA supermarket,x,DE03100400000608903100"
-        entries = csv.split(",")
-        tx = self.rule_engine.execute(entries)
-        self.assertEqual(tx.postings[0].account, "Assets:DE:CB:Laura:Current")
-        self.assertEqual(tx.postings[1].account, "Expenses:Groceries")
-
-
-if __name__ == "__main__":
-    unittest.main()

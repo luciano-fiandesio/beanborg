@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import abc
-from rule_engine.Context import Context
+from .Context import Context
 from beancount.core.data import Transaction, Posting, Amount, Close, Open
-from rule_engine.decision_tables import *
+from .decision_tables import *
 
 
 class Rule:
