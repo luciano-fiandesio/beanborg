@@ -12,21 +12,32 @@ import glob
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Move bank csv file to processing folder')
+        description="Move bank csv file to processing folder"
+    )
 
     parser.add_argument(
-        '-d', '--folder', help='Directory to scan for incoming bank csv file', required=True)
+        "-d",
+        "--folder",
+        help="Directory to scan for incoming bank csv file",
+        required=True,
+    )
     parser.add_argument(
-        '-f', '--name', help='String to identify bank csv file (starts with)', required=True)
+        "-f",
+        "--name",
+        help="String to identify bank csv file (starts with)",
+        required=True,
+    )
     parser.add_argument(
-        '-t', '--target', help='Target folder name (e.g. tmp)', default='tmp')
+        "-t", "--target", help="Target folder name (e.g. tmp)", default="tmp"
+    )
     parser.add_argument(
-        '-b', '--bank', help='Target name (e.g. DeutscheBank)', required=True)
+        "-b", "--bank", help="Target name (e.g. DeutscheBank)", required=True
+    )
 
     args = parser.parse_args()
 
     if not os.path.isdir(args.folder):
-        sys.exit('file: ' + args.folder + ' does not exist!')
+        sys.exit("file: " + args.folder + " does not exist!")
 
     if not os.path.isdir(args.target):
         os.mkdir(args.target)
@@ -35,20 +46,23 @@ def main():
     file_count = len(glob.glob1(args.folder, args.name + "*"))
 
     if file_count > 1:
-        sys.exit('more than one file starting with: ' +
-                 args.name + ' found. Can not continue.')
+        sys.exit(
+            "more than one file starting with: "
+            + args.name
+            + " found. Can not continue."
+        )
 
     if file_count == 0:
-        sys.exit('No file found in ' + args.folder +
-                 ' with name starting with: ' + args.name)
+        sys.exit(
+            "No file found in " + args.folder + " with name starting with: " + args.name
+        )
 
     for f in os.listdir(args.folder):
         if f.startswith(args.name):
-            os.rename(args.folder + '/' + f, args.target +
-                      '/' + args.bank + '.csv')
+            os.rename(args.folder + "/" + f, args.target + "/" + args.bank + ".csv")
 
     print("Done :) ")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
