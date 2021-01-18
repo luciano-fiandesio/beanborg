@@ -59,6 +59,30 @@ def test_custom_rule():
     assert tx.postings[0].account == "Assets:UK:Alice:Savings"
     assert tx.postings[1].account == "Assets:UK:Alice:Cash"
     
+def test_no_rulefile():
+
+    rule_engine = RuleEngine(
+        Context(
+            rules_dir=None,
+            account=None,
+            date_fomat="%d.%m.%Y",
+            default_expense="Expenses:Unknown",
+            date_pos=0,
+            payee_pos=3,
+            tx_type_pos=2,
+            account_pos=5,
+            rules=None,
+            assets=init_decision_table("tests/files/asset.rules"),
+            accounts=init_decision_table("tests/files/account.rules"),
+            payees=init_decision_table("tests/files/payee.rules")
+        )
+    )
+
+    entries = "31.10.2019,b,Withdrawal,alfa,waiting,ZZ03100400000608903100".split(",")
+    tx = rule_engine.execute(entries)
+
+    # no exception - the transaction is empty    
+    assert tx
 
 def make_rule_engine(rule_file):
     return RuleEngine(

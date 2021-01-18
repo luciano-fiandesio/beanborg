@@ -9,7 +9,6 @@ import os
 import sys
 import glob
 
-
 def main():
     parser = argparse.ArgumentParser(
         description="Move bank csv file to processing folder"

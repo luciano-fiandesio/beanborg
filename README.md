@@ -39,6 +39,15 @@ The workflow is based on 3 distinct stages:
 - Import the CSV file into Beancount ledger and automatically categorize the transactions
 - Move the bank CSV file into archive area
 
+### Preparation
+
+Each Beancount asset (bank account, credit card, etc.) to which you want to import data into must be declared in the main Beancount ledger.
+
+```
+2019-01-01 open Assets:Bob:Savings    	EUR
+```
+
+
 ### Stage 1: move bank file
 
 Download a CSV bank file from your bank and move it to a staging area.

@@ -79,64 +79,69 @@ class RuleEngine:
 
         custom_rules = self.load_custom_rules()
 
-        try:
-            with open(os.getcwd() + "/" + self._ctx.rules) as f:
+        if (self._ctx.rules == None):
+            print(u"\u26A0" + " no rules file spefified for this financial institution")
+            self.rules = {}
+        else:    
+            try:
+                with open(os.getcwd() + "/" + self._ctx.rules) as f:
 
-                yrules = yaml.load(f, Loader=yaml.FullLoader)["rules"]
-                for yrule in yrules:
+                    yrules = yaml.load(f, Loader=yaml.FullLoader)["rules"]
+                    for yrule in yrules:
 
-                    rule_name = yrule["name"]  # rule name
-                    xfrom = yrule.get("from")  # Account from
-                    xto = yrule.get("to")  # Account to
-                    xpos = yrule.get("csv_index")  # CSV index (base 0)
-                    # Payee string to ignore
-                    xignore = yrule.get("ignore_payee")
-                    # semicolon separated strings
-                    xstring = yrule.get("csv_values")
-                    xignorepos = yrule.get("ignore_string_at_pos")
+                        rule_name = yrule["name"]  # rule name
+                        xfrom = yrule.get("from")  # Account from
+                        xto = yrule.get("to")  # Account to
+                        xpos = yrule.get("csv_index")  # CSV index (base 0)
+                        # Payee string to ignore
+                        xignore = yrule.get("ignore_payee")
+                        # semicolon separated strings
+                        xstring = yrule.get("csv_values")
+                        xignorepos = yrule.get("ignore_string_at_pos")
 
-                    if rule_name in custom_rules:
-                        # print('custom-rule')
-                        self.rules[rule_name] = RuleDef(
-                            custom_rules[rule_name],
-                            xfrom,
-                            xto,
-                            xpos,
-                            xignore,
-                            xstring,
-                            xignorepos,
-                        )
-                    else:
-                        self.rules[rule_name] = RuleDef(
-                            globals()[rule_name],
-                            xfrom,
-                            xto,
-                            xpos,
-                            xignore,
-                            xstring,
-                            xignorepos,
-                        )
+                        if rule_name in custom_rules:
+                            # print('custom-rule')
+                            self.rules[rule_name] = RuleDef(
+                                custom_rules[rule_name],
+                                xfrom,
+                                xto,
+                                xpos,
+                                xignore,
+                                xstring,
+                                xignorepos,
+                            )
+                        else:
+                            self.rules[rule_name] = RuleDef(
+                                globals()[rule_name],
+                                xfrom,
+                                xto,
+                                xpos,
+                                xignore,
+                                xstring,
+                                xignorepos,
+                            )
 
-        except KeyError as ke:
-            sys.exit("The rule file references a rule that does not exist: " + str(ke))
+            except KeyError as ke:
+                sys.exit("The rule file references a rule that does not exist: " + str(ke))
 
-        except Exception as e:
-            # print(str(e))
-            sys.exit("The rule file " + self._ctx.rules + " is invalid!")
+            except Exception as e:
+                # print(str(e))
+                sys.exit("The rule file " + self._ctx.rules + " is invalid!")
 
     def load_custom_rules(self):
 
         custom_rulez = {}
-        sys.path.append(os.getcwd() + "/" + self._ctx.rules_dir)
-        custom_rules = fnmatch.filter(
-            os.listdir(os.getcwd() + "/" + self._ctx.rules_dir), "*.py"
-        )
-        for r in custom_rules:
-            mod_name = r[:-3]
-            mod = __import__(mod_name, globals={})
-            class_ = getattr(mod, mod_name)
-            # TODO check if custom rule is of type rule before adding
-            custom_rulez[mod_name] = class_
+        if self._ctx.rules_dir != None:
+            sys.path.append(os.getcwd() + "/" + self._ctx.rules_dir)
+            custom_rules = fnmatch.filter(
+                os.listdir(os.getcwd() + "/" + self._ctx.rules_dir), "*.py"
+            )
+            for r in custom_rules:
+                mod_name = r[:-3]
+                mod = __import__(mod_name, globals={})
+                class_ = getattr(mod, mod_name)
+                # TODO check if custom rule is of type rule before adding
+                custom_rulez[mod_name] = class_
 
         return custom_rulez
 
