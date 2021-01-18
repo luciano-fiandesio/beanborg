@@ -50,8 +50,11 @@ Script to use: `bb-mover.py`
 Arguments:
 
 `-d`: directory to scan for incoming CVS bank files
+
 `-f`: a String for which the file to import starts with
+
 `-t`: the folder name or path in which the bank file is moved
+
 `-b`: the bank identification string used in the following stages
 
 
@@ -80,35 +83,52 @@ Arguments:
 General options
 
 `-f`: path to the csv file to import
+
 `-b`: target Beancount file
+
 `-s`: separator used in the CSV file. Default: `,`
+
 `-l`: CSV file lines to skip during import. Default: `1`
+
 `-o`: Date format used in the CVS file. The format is based on `strftime` directives: https://strftime.org/
+
 `-t`: Currency decimal separator. Default: `.`
 
 CSV file index options
 
 `-d`: CSV file index for the date column. Default: `0`
+
 `-p`: CSV file index for the payee column. Default: `3`
+
 `-m`: CSV file index for the amount column. Default: `4`
+
 `-i`: CSV file index for the account identification column. Default: `8`
+
 `-c`: CSV file index for the currency identification column. Default: `5`
+
 `-x`: CSV file index for the transaction type column. Default: `2`
 
 
 Rule options
 
 `-r`: path to the rules folder. Default: `rules`
+
 `-z`: name of the rule file to use for the import
+
 `-k`: Default expense category. Default: `Expenses:Unknown`
 
 Other options
 
 `-a`: account identification string, in case the CSV file does't have it 
+
 `-u`: force currency string during import 
+
 `-v`: print debug info
+
 `-q`: CSV file index for amount "in" -- TODO
+
 `-g`: force negative -- TODO
+
 `-e`: invert negative -- TODO
 
 
