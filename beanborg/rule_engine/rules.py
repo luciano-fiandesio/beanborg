@@ -100,7 +100,7 @@ class Set_Accounts(Rule):
 
 class Replace_Payee(Rule):
     """
-    Replace the name of the transaction payee (for instance: McDonald -> Mc Donald Restaurant)
+    Replaces the name of the transaction payee (for instance: McDonald -> Mc Donald Restaurant)
     The rule file containing the substitution rules must be located in the rules folder and
     must be named "payee.rules"
     """
@@ -123,6 +123,13 @@ class Replace_Payee(Rule):
 
 
 class Replace_Asset(Rule):
+    """
+    Assigns an account to a transaction, based on value of the 'account_pos' index of a CSV file row.
+    This rule is useful to assign the correct source account of a CSV transaction.
+    
+    The rule is based on the 'asset.rules' look-up file.
+    """
+    
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
 
@@ -143,6 +150,12 @@ class Replace_Asset(Rule):
 
 
 class Replace_Expense(Rule):
+    """
+    Categorizes a transaction by assigning the account extracted from a look-up table
+    based on the 'payee_pos' index of a CSV file row.
+
+    The rule is based on the 'payee.rules' look-up file.
+    """
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
 
