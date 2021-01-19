@@ -1,4 +1,4 @@
-from beanborg.rule_engine.decision_tables import resolve_from_decision_table
+from beanborg.rule_engine.decision_tables import *
 
 
 def test_equal_value():
@@ -25,3 +25,10 @@ def test_contains_value():
     assert "batman" == resolve_from_decision_table(
         table, "hello_superman_hello", "mini"
     )
+
+def test_loadfile():
+    table = init_decision_table("tests/files/payee_with_comments.rules")
+    assert table["ford"] != None
+    assert table["ford"][0] == "contains"
+    assert table["ford"][1] == "Ford Auto"
+    

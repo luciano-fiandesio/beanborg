@@ -10,7 +10,7 @@ def init_decision_table(file):
         print("The decision table file: " + file + " is missing.")
     else:
         with open(os.getcwd() + "/" + file) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=";")
+            csv_reader = csv.reader(decomment(csv_file), delimiter=";")
             next(csv_reader)  # skip first line
             for row in csv_reader:
                 if any(row):
@@ -20,6 +20,10 @@ def init_decision_table(file):
                         print("invalid rule: " + ", ".join(row))
     return table
 
+def decomment(csvfile):
+    for row in csvfile:
+        raw = row.split('#')[0].strip()
+        if raw: yield row
 
 def resolve_from_decision_table(table, string, default):
     eq_check_func = {
