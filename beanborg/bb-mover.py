@@ -8,6 +8,10 @@ import argparse
 import os
 import sys
 import glob
+import yaml
+from config import *
+
+yaml.add_constructor(u'!Config', Config.mover)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -15,46 +19,35 @@ def main():
     )
 
     parser.add_argument(
-        "-d",
-        "--folder",
-        help="Directory to scan for incoming bank csv file",
-        required=True,
-    )
-    parser.add_argument(
         "-f",
-        "--name",
-        help="String to identify bank csv file (starts with)",
+        "--file",
+        help="Configuration file to load",
         required=True,
-    )
-    parser.add_argument(
-        "-t", "--target", help="Target folder name (e.g. tmp)", default="tmp"
-    )
-    parser.add_argument(
-        "-b", "--bank", help="Target name (e.g. DeutscheBank)", required=True
     )
 
     args = parser.parse_args()
 
-    if not os.path.isdir(args.folder):
-        sys.exit("file: " + args.folder + " does not exist!")
+    with open(args.file, 'r') as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+    
+    if not os.path.isdir(config.path):
+        print("folder: %s does not exist!"%(config.path,))
+        sys.exit(-1)
 
-    if not os.path.isdir(args.target):
-        os.mkdir(args.target)
+    if not os.path.isdir(config.target):
+        os.mkdir(config.target)
 
     # count number of files starting with:
-    file_count = len(glob.glob1(args.folder, args.name + "*"))
+    file_count = len(glob.glob1(config.path, config.name + "*"))
 
     if file_count > 1:
-        sys.exit(
-            "more than one file starting with: "
-            + args.name
-            + " found. Can not continue."
-        )
+        print("more than one file starting with %s found in %s. Can not continue."%(config.name,config.path))
+        sys.exit(-1)
 
     if file_count == 0:
-        sys.exit(
-            "No file found in " + args.folder + " with name starting with: " + args.name
-        )
+        print("No file found in %s with name starting with: %s"%(config.path, config.name))
+        sys.exit(-1)
+
 
     for f in os.listdir(args.folder):
         if f.startswith(args.name):
