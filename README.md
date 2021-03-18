@@ -9,7 +9,7 @@ Helper scripts for quick Plain Text Accounting using [Beancount](http://furius.c
 
 ## Goals
 
-The main goal of this set of scripts is to import transactions from a CSV file into the Beancount ledger and automatically assign the correct Expense account to the transaction.
+The main goal of this set of scripts is to import financial transactions from a financial institution's CSV file into the Beancount ledger and automatically assign the correct Expense account to the transaction.
 
 For instance, given the following CSV entry:
 
@@ -21,10 +21,10 @@ will be imported by assigning the Account "Expense:Grocery" to the transaction:
 
 ```
 2020-11-04 * "Fresh Food" ""
-  csv: "04.11.2020,04.11.2020,Direct Debit,Fresh Food,-21,30,EUR,0000001,UK0000001444555"
-  md5: "60a54f6ed13ae7b7e70fd475eb677511"
-  Assets:Bank1:Bob:Current  -21.30 EUR
-  Expenses:Grocery      
+csv: "04.11.2020,04.11.2020,Direct Debit,Fresh Food,-21,30,EUR,0000001,UK0000001444555"
+md5: "60a54f6ed13ae7b7e70fd475eb677511"
+Assets:Bank1:Bob:Current  -21.30 EUR
+Expenses:Grocery      
 ```
 
 The automatic categorization is rule-based. The scripts come with a set of standard rules, but it is possible to dynamically invoke custom rules.
@@ -44,7 +44,7 @@ The workflow is based on 3 distinct stages:
 Each Beancount asset (bank account, credit card, etc.) to which you want to import data into must be declared in the main Beancount ledger.
 
 ```
-2019-01-01 open Assets:Bob:Savings    	EUR
+2019-01-01 open Assets:Bob:Savings      EUR
 ```
 
 
@@ -144,12 +144,3 @@ Arguments:
 move: `../beanborg/bb-mover.py -d ~/tmp/ -f 'bank1' -t 'tmp' -b 'b1'`
 
 import  `../beanborg/bb-import.py -f tmp/b1.csv -b 'main.ldg' -r 'myrules' -z 'bank1.rules' -i 7 -t ',' -s ';' -o '%d.%m.%Y' -v`
-
-
-
-
-
-
-
-
-
