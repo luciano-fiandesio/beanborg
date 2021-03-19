@@ -27,7 +27,7 @@ class Indexes(object):
 
 class Csv(object):
 
-    def __init__(self, download_path, name, ref, separator=None, currency_sep=None, date_format=None, skip=None, target=None):
+    def __init__(self, download_path, name, ref, separator=None, currency_sep=None, date_format=None, skip=None, target=None, archive=None):
         self.download_path = download_path
         self.name = name
         self.ref = ref
@@ -36,6 +36,7 @@ class Csv(object):
         self.date_format = date_format
         self.skip = skip
         self.target = target
+        self.archive = archive
 
 class Config(object):
 
@@ -58,7 +59,8 @@ class Config(object):
             csv_data.get('currency_sep', '.'),
             csv_data['date_format'],
             csv_data.get('skip', 1),
-            csv_data.get('target', 'tmp')
+            csv_data.get('target', 'tmp'),
+            csv_data.get('archive', 'archive')
         )
 
         idx = values['indexes'] 

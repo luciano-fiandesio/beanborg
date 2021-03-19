@@ -10,6 +10,7 @@ import os
 from datetime import datetime
 import sys
 import shutil
+from config import *
 
 def main():
 
