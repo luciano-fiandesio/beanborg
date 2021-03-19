@@ -4,7 +4,6 @@
 __copyright__ = "Copyright (C) 2021  Luciano Fiandesio"
 __license__ = "GNU GPLv2"
 
-import argparse
 import csv
 from datetime import datetime, timedelta
 import hashlib
@@ -32,6 +31,10 @@ def gen_datetime(min_year=1900, max_year=datetime.now().year):
 
 
 def init_rule_engine(args):
+    """
+    Initialize the import rule engine using the arguments from
+    the configuration file
+    """
 
     # make sure the rules folder exists
     if not os.path.isdir(args.rules_folder):
@@ -42,9 +45,9 @@ def init_rule_engine(args):
         sys.exit("The rule file " + args.rules_file + " does not exist!")
 
     if not os.path.isfile(args.rules_folder + "/asset.rules") and args.account is None:
-        sys.exit(
-            "Please specify an account id string (using the -a flag) or create an entry in the asset.rules file"
-        )
+
+        print('Please specify an account id string (using the -a flag)'
+              'or create an entry in the asset.rules file')
 
     return RuleEngine(
         Context(
@@ -65,6 +68,10 @@ def init_rule_engine(args):
 
 
 def load_journal_hashes(journal):
+    """
+    Load in-memory all the hashes (md5 property) of the provided ledger.
+    This is required for the duplication detecting algo 
+    """
 
     md5s = []
     entries, _, _ = loader.load_file(journal)
@@ -85,7 +92,7 @@ def log_error(row):
 
 
 def get_account(row, args):
-    """ get the account for the given csv line or use the specified account """
+    """ get the account value for the given csv line or use the specified account """
     if args.account:
         return args.account
 
@@ -93,19 +100,23 @@ def get_account(row, args):
 
 
 def get_currency(row, args):
+    """ get the currency value for the given csv line or use the specified currency """
     if args.currency:
         return args.currency
     return row[args.currency_pos]
 
 
 def resolve_amount(row, args):
+    """
+    aaa
+    """
+    # Get the amount from the line
+    val = row[args.amount_pos].strip()
 
     if args.amount_pos_in != -99:
-        return D(row[args.amount_pos_in].strip().replace(args.currency_sep, ".")) - D(
-            row[args.amount_pos].strip().replace(args.currency_sep, ".")
-        )
+        return D(row[args.amount_pos_in].strip().replace(args.currency_sep, ".")) -
+        D(val.replace(args.currency_sep, "."))
 
-    val = row[args.amount_pos].strip()
     if args.invert_negative:
         if val[0] == "-":
             val = val.replace("-", "+")
@@ -116,67 +127,15 @@ def resolve_amount(row, args):
     return D(val.replace(args.currency_sep, "."))
 
 
-def init_arg_parser():
-
-    parser = argparse.ArgumentParser(
-        description="Parse bank csv and create intermediate xml file"
-    )
-
-    parser.add_argument("-f", "--file", help="Path to CSV file to parse", required=True)
-    parser.add_argument(
-        "-b", "--beancount_file", help="Target beancount file", required=True
-    )
-    parser.add_argument("-s", "--separator", help="CSV file separator", default=",")
-    parser.add_argument(
-        "-l", "--skip", help="Number of lines to skip", default=1, type=int
-    )
-
-    # csv column indexes
-    parser.add_argument("-d", "--date_pos", help="", default=0, type=int)
-    parser.add_argument("-p", "--payee_pos", help="", default=3, type=int)
-    parser.add_argument("-m", "--amount_pos", help="", default=4, type=int)
-    parser.add_argument("-q", "--amount_pos_in", help="", default=-99, type=int)
-
-    parser.add_argument("-i", "--account_pos", help="", default=8, type=int)
-    parser.add_argument("-c", "--currency_pos", help="", default=5, type=int)
-    parser.add_argument("-x", "--tx_type_pos", help="", default=2, type=int)
-    # end csv column indexes
-
-    parser.add_argument("-o", "--date_format", help="")
-    parser.add_argument(
-        "-t", "--currency_sep", help="Currency decimal separator", default="."
-    )
-    parser.add_argument("-k", "--default_expense", default="Expenses:Unknown")
-    # rules folder
-    parser.add_argument("-r", "--rules_folder", default="rules")
-
-    # rule file to use
-    parser.add_argument("-z", "--rules_file", required=True)
-
-    # account
-    # this is required for csv file without account position
-    parser.add_argument("-a", "--account", required=False, default=None)
-
-    # currency
-    parser.add_argument("-u", "--currency", required=False, default=None)
-
-    parser.add_argument("-g", "--force_negative", required=False, default=0, type=int)
-    parser.add_argument("-e", "--invert_negative", required=False, default=0, type=int)
-    parser.add_argument(
-        "-v", "--debug", required=False, default=False, action="store_true"
-    )
-    return parser
-
-
 def main():
 
-    parser = init_arg_parser()
-
-    args = parser.parse_args()
+    args = init_config("Parse bank csv file and import into beancount")
 
     if not os.path.isfile(args.file):
-        sys.exit("file: " + args.file + " does not exist!")
+        print("file: %s does not exist!" % (args.file))
+        sys.exit(-1)
 
+    # init report data
     tx_in_file = 0
     processed = 0
     error = 0
@@ -230,20 +189,24 @@ def main():
                         new_posting = tx.postings[0]._replace(
                             units=Amount(amount, get_currency(row, args))
                         )
-                        tx = tx._replace(postings=[new_posting] + [tx.postings[1]])
+                        tx = tx._replace(
+                            postings=[new_posting] + [tx.postings[1]])
 
                         if args.debug:
                             print(tx)
 
                         if tx.postings[0].account is None:
                             raise Exception(
-                                "Unable to resolve the account, please check that the 'Replace_Asset' rule is in use for this account"
+                                'Unable to resolve the account, '
+                                'please check that the `Replace_Asset` rule'
+                                'is in use for this account'
                             )
 
                         # generate a key based on:
                         # - the tx date
                         # - a random time (tx time is not important, but date is!)
-                        transactions[str(tx_date) + str(gen_datetime().time())] = tx
+                        transactions[str(tx_date) +
+                                     str(gen_datetime().time())] = tx
                     else:
                         ignored_by_rule += 1
                 else:

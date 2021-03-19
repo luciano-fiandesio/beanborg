@@ -11,24 +11,9 @@ import glob
 import yaml
 from config import *
 
-yaml.add_constructor(u'!Config', Config.mover)
-
 def main():
-    parser = argparse.ArgumentParser(
-        description="Move bank csv file to processing folder"
-    )
-
-    parser.add_argument(
-        "-f",
-        "--file",
-        help="Configuration file to load",
-        required=True,
-    )
-
-    args = parser.parse_args()
-
-    with open(args.file, 'r') as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
+    
+    config = init_config("Move bank csv file to processing folder")
     
     if not os.path.isdir(config.path):
         print("folder: %s does not exist!"%(config.path,))
