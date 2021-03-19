@@ -48,22 +48,38 @@ The configuration file is used by the import scripts to determine the CSV file s
 
 A Beanborg configuration must start with `--- !Config` and has 3 sections:
 
-#### CSV
+#### csv
 
-This section determines some information related to the structure and localtion of the CVS file.
+This section of the configuration file determines the options related to the structure and localtion of the CVS file.
+These are the list of options for the `csv` section:
 
 | Property      | Description                                                                                                                                                                                      | Default | Example             |
 |---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|---------------------|
 | download_path | Full path to the folder to which the CSV is downloaded to                                                                                                                                        |         | /home/john/download |
 | name          | The name of the CSV file, at the time of download. Note that the name can be partial. For instance, is the CSV file is named "bank1-statement-03-2020", the `name` can be simply set to `bank1`  |         | `bank1`             |
-| ref           | Once the CVS file is imported into the staging area, it gets renamed using the value of `ref`. It is recommended to use a short string to identify the financial institution.                    |         | `com`               |
+| ref           | Once the CVS file is imported into the staging area, it gets renamed using the value of `ref`. It is recommended to use a short string to identify the financial institution                    |         | `com`               |
 | separator     | The CSV separator                                                                                                                                                                                | ,       |                     |
 | currency_sep  | The decimal separator used in the CSV file                                                                                                                                                       | .       |                     |
 | date_format   | Date format used in the CVS file. The format is based on  strftime directives: https://strftime.org/. Note that the value must be in quotes                                                      |         | "%d/%m/%Y"          |
-| skip          | CSV file lines to skip during import.                                                                                                                                                            | 1       |                     |
+| skip          | CSV file lines to skip during import                                                                                                                                                             | 1       |                     |
 | target        | The folder name or path in which the CSV file is moved to during the first stage.                                                                                                                | tmp     |                     |
 | archive       | The folder name of path in which the CSV file is archived during the archive stage                                                                                                               | archive |                     |
 
+#### indexes
+
+The `indexes` section of the configuration file allows to configure how to map each CSV "column" (or index) to the information required to parse and import the data. In other words, each option is used by Beanborg to determine where the `date` or `amount` of each transaction is located on the CVS file.
+
+| Property     | Description                                                                                                                                                                                      | Default |
+|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| date         | The index corresponding to the date of the transaction                                                                                                                                           | 0       |
+| counterparty | The index corresponding to the name of the counterparty of the transaction                                                                                                                       | 3       |
+| amount       | The index corresponding to the amount of the transaction (either debit or credit)                                                                                                                | 4       |
+| currency     | The index corresponding to the currency of the transaction                                                                                                                                       | 5       |
+| tx_type      | The index corresponding to the transaction type                                                                                                                                                  | 2       |
+| amount_in    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the  index corresponding to the credited amount of the transaction |         |
+
+
+#### rules
 
 
 Each Beancount asset (bank account, credit card, etc.) to which you want to import data into must be declared in the main Beancount ledger.

@@ -15,9 +15,9 @@ class Rules(object):
 
 class Indexes(object):
 
-    def __init__(self, date=None, payee=None, amount=None, account=None, currency=None, tx_type=None, amount_in=None):
+    def __init__(self, date=None, counterparty=None, amount=None, account=None, currency=None, tx_type=None, amount_in=None):
         self.date = date
-        self.payee = payee
+        self.counterparty = counterparty
         self.amount = amount
         self.account = amount
         self.currency = currency
@@ -67,7 +67,7 @@ class Config(object):
         
         indexes = Indexes(
             idx.get('date', 0), 
-            idx.get('payee', 3),
+            idx.get('counterparty', 3),
             idx.get('amount', 4),
             idx.get('currency', 5),
             idx.get('tx_type', 2),
