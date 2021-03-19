@@ -12,6 +12,7 @@ import os.path
 import sys
 import random
 import traceback
+from config import *
 from beancount.parser.printer import format_entry
 from beancount.core.data import Transaction, Amount
 from beancount.core.number import D
@@ -35,34 +36,38 @@ def init_rule_engine(args):
     Initialize the import rule engine using the arguments from
     the configuration file
     """
+    folder = args.rules.rules_folder
+    rule_file = args.rules.rules_file
 
     # make sure the rules folder exists
-    if not os.path.isdir(args.rules_folder):
-        sys.exit("The rule folder " + args.rules_folder + " does not exist!")
+    if not os.path.isdir(folder):
+        print("The rule folder %s does not exist!"%(folder))
+        sys.exit(-1)
 
     # make sure the rules files exists
-    if not os.path.isfile(args.rules_folder + "/" + args.rules_file):
-        sys.exit("The rule file " + args.rules_file + " does not exist!")
+    if not os.path.isfile(folder + "/" + rule_file):
+        print("The rule file %s does not exist!"%(rule_file))
+        sys.exit(-1)
 
-    if not os.path.isfile(args.rules_folder + "/asset.rules") and args.account is None:
+    if not os.path.isfile(folder + "/asset.rules") and args.account is None:
 
         print('Please specify an account id string (using the -a flag)'
               'or create an entry in the asset.rules file')
 
     return RuleEngine(
         Context(
-            date_fomat=args.date_format,
-            default_expense=args.default_expense,
-            date_pos=args.date_pos,
-            payee_pos=args.payee_pos,
-            tx_type_pos=args.tx_type_pos,
-            account_pos=args.account_pos,
-            account=args.account,
-            rules=args.rules_folder + "/" + args.rules_file,
-            rules_dir=args.rules_folder,
-            assets=init_decision_table(args.rules_folder + "/asset.rules"),
-            accounts=init_decision_table(args.rules_folder + "/account.rules"),
-            payees=init_decision_table(args.rules_folder + "/payee.rules"),
+            date_fomat=args.csv.date_format,
+            default_expense=args.rules.default_expense,
+            date_pos=args.indexes.date,
+            payee_pos=args.indexes.payee,
+            tx_type_pos=args.indexes.tx_type,
+            account_pos=args.indexes.account,
+            account=args.rules.account,
+            rules=folder + "/" + rule_file,
+            rules_dir=folder,
+            assets=init_decision_table(folder + "/asset.rules"),
+            accounts=init_decision_table(folder + "/account.rules"),
+            payees=init_decision_table(folder + "/payee.rules"),
         )
     )
 
@@ -93,17 +98,17 @@ def log_error(row):
 
 def get_account(row, args):
     """ get the account value for the given csv line or use the specified account """
-    if args.account:
-        return args.account
+    if args.rules.account:
+        return args.rules.account
 
-    return row[args.account_pos]
+    return row[args.indexes.account]
 
 
 def get_currency(row, args):
     """ get the currency value for the given csv line or use the specified currency """
-    if args.currency:
-        return args.currency
-    return row[args.currency_pos]
+    if args.rules.currency:
+        return args.rules.currency
+    return row[args.indexes.currency]
 
 
 def resolve_amount(row, args):
@@ -111,28 +116,29 @@ def resolve_amount(row, args):
     aaa
     """
     # Get the amount from the line
-    val = row[args.amount_pos].strip()
+    val = row[args.indexes.amount].strip()
 
-    if args.amount_pos_in != -99:
-        return D(row[args.amount_pos_in].strip().replace(args.currency_sep, ".")) -
-        D(val.replace(args.currency_sep, "."))
+    if args.indexes.amount_in:
+        return D(row[args.indexes.amount_in].strip().replace(args.csv.currency_sep, ".")) -D(val.replace(args.csv.currency_sep, "."))
 
-    if args.invert_negative:
+    if args.rules.invert_negative:
         if val[0] == "-":
             val = val.replace("-", "+")
 
-    if args.force_negative == 1:
+    if args.rules.force_negative == 1:
         if val[0].isdigit():
             val = "-" + val
-    return D(val.replace(args.currency_sep, "."))
+    return D(val.replace(args.csv.currency_sep, "."))
 
 
 def main():
 
     args = init_config("Parse bank csv file and import into beancount")
 
-    if not os.path.isfile(args.file):
-        print("file: %s does not exist!" % (args.file))
+    import_csv = args.csv.target + '/' + args.csv.ref + '.csv' 
+
+    if not os.path.isfile(import_csv):
+        print("file: %s does not exist!" % (import_csv))
         sys.exit(-1)
 
     # init report data
@@ -143,16 +149,13 @@ def main():
     ignored_by_rule = 0
     transactions = {}
     rule_engine = init_rule_engine(args)
-    tx_hashes = load_journal_hashes(args.beancount_file)
-
-    if args.debug:
-        print("found hashes:  " + str(tx_hashes))
+    tx_hashes = load_journal_hashes(args.rules.bc_file)
 
     accounts = set()
 
-    with open(args.file) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=args.separator)
-        for i in range(args.skip):
+    with open(import_csv) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=args.csv.separator)
+        for i in range(args.csv.skip):
             next(csv_reader)  # skip the line
         for row in csv_reader:
             tx_in_file += 1
@@ -164,12 +167,12 @@ def main():
                 # the system expects one account per imported file
                 res_account = get_account(row, args)
                 if args.debug:
-                    print("resolved account: " + res_account)
+                    print("resolved account: " + str(res_account))
                 accounts.add(res_account)
 
                 if md5 not in tx_hashes:
                     tx_date = datetime.strptime(
-                        row[args.date_pos].strip(), args.date_format
+                        row[args.indexes.date].strip(), args.csv.date_format
                     )
                     tx_meta = {"csv": ",".join(row), "md5": md5}
                     tx = rule_engine.execute(row)
