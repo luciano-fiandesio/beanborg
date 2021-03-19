@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import csv
@@ -26,6 +25,7 @@ def decomment(csvfile):
         if raw: yield row
 
 def resolve_from_decision_table(table, string, default):
+    
     eq_check_func = {
         "equals": _equals,
         "startsWith": _startsWith,
@@ -39,6 +39,7 @@ def resolve_from_decision_table(table, string, default):
     for k in table.keys():
         t = table[k]
         eq_check_type = t[0]
+        ## TODO: do not fail if string (equals, contains, etc does not match)
         if eq_check_func.get(eq_check_type)(string, k):
             return t[1]
 
