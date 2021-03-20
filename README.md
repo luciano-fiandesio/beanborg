@@ -27,7 +27,23 @@ Assets:Bank1:Bob:Current  -21.30 EUR
 Expenses:Grocery      
 ```
 
-The automatic categorization is rule-based. The scripts come with a set of standard rules, but it is possible to dynamically invoke custom rules.
+The automatic categorization is rule-based. The scripts come with a set of standard rules, but it is possible to add custom rules that open up to different type of use-cases.
+
+## Installation
+
+Clone this repository and add the `beanborg` folder to your shell's ath.
+
+```
+git clone https://github.com/luciano-fiandesio/beanborg
+
+# Bash: add the following to your ~/.profile or ~/.bash_profile
+
+PATH=$PATH:~/../beanborg
+
+# Fish: add the following to your config.fish file 
+
+fish_add_path ~/../beanborg
+```
 
 ## Workflow
 
@@ -38,6 +54,10 @@ The workflow is based on 3 distinct stages:
 - Move a downloaded bank CSV file into the stage area
 - Import the CSV file into Beancount ledger and automatically categorize the transactions
 - Move the bank CSV file into archive area
+
+The first stage is executed by the `bb_mover` script.
+The second stage is executed by the `bb_import` script.
+The third stage is executed by the `bb_clean` script.
 
 ### Configuration
 
@@ -55,14 +75,14 @@ These are the list of options for the `csv` section:
 
 | Property      | Description                                                                                                                                                                                      | Default | Example             |
 |---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|---------------------|
-| download_path | Full path to the folder to which the CSV is downloaded to                                                                                                                                        |         | /home/john/download |
-| name          | The name of the CSV file, at the time of download. Note that the name can be partial. For instance, is the CSV file is named "bank1-statement-03-2020", the `name` can be simply set to `bank1`  |         | `bank1`             |
-| ref           | Once the CVS file is imported into the staging area, it gets renamed using the value of `ref`. It is recommended to use a short string to identify the financial institution                    |         | `com`               |
-| separator     | The CSV separator                                                                                                                                                                                | ,       |                     |
+| download_path | Full path to the folder to which the CSV is downloaded to at the beginning of the import process. This option is only required by the `bb_mover` script.                                      |         | "/home/john/download" |
+| name          | The name of the CSV file, at the time of download. Note that the name can be partial. For instance, is the CSV file is named "bank1-statement-03-2020", the `name` can be simply set to `bank1`. This option is only required by the `bb_mover` script.                                                         |         | `bank1`             |
+| ref           | Once the CVS file is imported into the staging area, it gets renamed using the value of `ref`. It is recommended to use a short string to identify the financial institution. This option is used by all the scripts.                                                                                   |         | `com`               |
+| separator     | The field delimiter used in the financial institution's CSV file.        | ,       |                     |
 | currency_sep  | The decimal separator used in the CSV file                                                                                                                                                       | .       |                     |
 | date_format   | Date format used in the CVS file. The format is based on  strftime directives: https://strftime.org/. Note that the value must be in quotes                                                      |         | "%d/%m/%Y"          |
-| skip          | CSV file lines to skip during import                                                                                                                                                             | 1       |                     |
-| target        | The folder name or path in which the CSV file is moved to during the first stage.                                                                                                                | tmp     |                     |
+| skip          | Number of lines of the CSV file to skip during import                                                                                                    | 1       |                     |
+| target        | The folder name or path in which the CSV file is moved to during the first stage.    s                                                                                                            | tmp     |                     |
 | archive       | The folder name of path in which the CSV file is archived during the archive stage                                                                                                               | archive |                     |
 
 #### indexes
@@ -82,6 +102,7 @@ Note that the first index starts from `0`.
 
 
 #### rules
+
 
 
 Each Beancount asset (bank account, credit card, etc.) to which you want to import data into must be declared in the main Beancount ledger.

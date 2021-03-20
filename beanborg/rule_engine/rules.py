@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import abc
@@ -100,7 +99,7 @@ class Set_Accounts(Rule):
 
 class Replace_Payee(Rule):
     """
-    Replaces the name of the transaction payee (for instance: McDonald -> Mc Donald Restaurant)
+    Replaces the name of the transaction counterparty (for instance: McDonald -> Mc Donald Restaurant)
     The rule file containing the substitution rules must be located in the rules folder and
     must be named "payee.rules"
     """

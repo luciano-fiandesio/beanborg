@@ -14,23 +14,6 @@ from config import *
 
 def main():
 
-    # parser = argparse.ArgumentParser(description="")
-
-    # parser.add_argument(
-    #     "-t", "--target", help="Target folder name (e.g. tmp)", required=True
-    # )
-    # parser.add_argument("-a", "--archive", help="archive folder", default="archive")
-    # parser.add_argument(
-    #     "-b", "--bank", help="Target name (e.g. DeutscheBank)", required=True
-    # )
-    # parser.add_argument(
-    #     "-l", "--skip", help="Number of lines to skip", default=1, type=int
-    # )
-    # parser.add_argument("-d", "--date_pos", help="", default=0, type=int)
-    # parser.add_argument("-o", "--date_format", help="")
-    # parser.add_argument("-s", "--separator", help="CSV file separator", default=",")
-
-    # args = parser.parse_args()
     config = init_config("Archives imported CVS file")
     
     target_csv = config.csv.target + '/' + config.csv.ref + ".csv"
