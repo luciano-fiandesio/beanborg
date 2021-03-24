@@ -1,5 +1,7 @@
 import yaml
 import argparse
+import os
+import sys
 
 class Rules(object):
 
@@ -64,7 +66,7 @@ class Config(object):
             csv_data.get('archive_path', 'archive')
         )
 
-        idx = values['indexes'] 
+        idx = values.get('indexes', dict()) 
         
         indexes = Indexes(
             idx.get('date', 0), 
@@ -83,7 +85,7 @@ class Config(object):
             rls.get('rules_file', csv.ref + '.rules'),
             rls.get('account', None),
             rls.get('currency', None),
-            rls.get('default_expense', 'Expense:Unknown'),
+            rls.get('default_expense', 'Expenses:Unknown'),
             rls.get('force_negative', False),
             rls.get('invert_negative', False),
             rls.get('ruleset', [])
@@ -96,6 +98,11 @@ class Config(object):
 def init_config(file, debug):
 
     yaml.add_constructor(u'!Config', Config.load)
+
+    if not os.path.isfile(file):
+        print("file: %s does not exist!" % (file))
+        sys.exit(-1)
+
 
     with open(file, 'r') as file:
         config = yaml.load(file, Loader=yaml.FullLoader)

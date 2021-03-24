@@ -128,7 +128,6 @@ def resolve_amount(row, args):
 
 def main():
 
-
     options = eval_args('Parse bank csv file and import into beancount')
     args = init_config(options.file, options.debug)
     

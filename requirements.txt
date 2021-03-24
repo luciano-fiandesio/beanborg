@@ -1,2 +1,2 @@
 beancount==2.3.3
-dataclasses==0.8
+pyyaml==5.4.1
