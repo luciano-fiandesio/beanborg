@@ -18,7 +18,8 @@ import importlib
 from importlib import import_module
 import fnmatch
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+__location__ = os.path.realpath(os.path.join(
+    os.getcwd(), os.path.dirname(__file__)))
 
 
 @dataclass
@@ -78,50 +79,47 @@ class RuleEngine:
 
         custom_rules = self.load_custom_rules()
 
-        if (self._ctx.rules == None):
+        if (self._ctx.ruleset == None):
             print(u"\u26A0" + " no rules file spefified for this financial institution")
             self.rules = {}
-        else:    
+        else:
             try:
-                with open(os.getcwd() + "/" + self._ctx.rules) as f:
+                for yrule in self._ctx.ruleset:
+                    rule_name = yrule["name"]  # rule name
+                    xfrom = yrule.get("from")  # Account from
+                    xto = yrule.get("to")  # Account to
+                    xpos = yrule.get("csv_index")  # CSV index (base 0)
+                    # Payee string to ignore
+                    xignore = yrule.get("ignore_payee")
+                    # semicolon separated strings
+                    xstring = yrule.get("csv_values")
+                    xignorepos = yrule.get("ignore_string_at_pos")
 
-                    yrules = yaml.load(f, Loader=yaml.FullLoader)["rules"]
-                    for yrule in yrules:
-
-                        rule_name = yrule["name"]  # rule name
-                        xfrom = yrule.get("from")  # Account from
-                        xto = yrule.get("to")  # Account to
-                        xpos = yrule.get("csv_index")  # CSV index (base 0)
-                        # Payee string to ignore
-                        xignore = yrule.get("ignore_payee")
-                        # semicolon separated strings
-                        xstring = yrule.get("csv_values")
-                        xignorepos = yrule.get("ignore_string_at_pos")
-
-                        if rule_name in custom_rules:
-                            # print('custom-rule')
-                            self.rules[rule_name] = RuleDef(
-                                custom_rules[rule_name],
-                                xfrom,
-                                xto,
-                                xpos,
-                                xignore,
-                                xstring,
-                                xignorepos,
-                            )
-                        else:
-                            self.rules[rule_name] = RuleDef(
-                                globals()[rule_name],
-                                xfrom,
-                                xto,
-                                xpos,
-                                xignore,
-                                xstring,
-                                xignorepos,
-                            )
+                    if rule_name in custom_rules:
+                        # print('custom-rule')
+                        self.rules[rule_name] = RuleDef(
+                            custom_rules[rule_name],
+                            xfrom,
+                            xto,
+                            xpos,
+                            xignore,
+                            xstring,
+                            xignorepos,
+                        )
+                    else:
+                        self.rules[rule_name] = RuleDef(
+                            globals()[rule_name],
+                            xfrom,
+                            xto,
+                            xpos,
+                            xignore,
+                            xstring,
+                            xignorepos,
+                        )
 
             except KeyError as ke:
-                sys.exit("The rule file references a rule that does not exist: " + str(ke))
+                sys.exit(
+                    "The rule file references a rule that does not exist: " + str(ke))
 
             except Exception as e:
                 # print(str(e))

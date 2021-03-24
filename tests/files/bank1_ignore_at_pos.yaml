@@ -28,5 +28,6 @@ rules:
   force_negative: true
   invert_negative: true
   ruleset:
-    - name: hello_rule
-      test: 1
+    - name: Ignore_By_StringAtPos
+      ignore_string_at_pos: 
+        - waiting;4

@@ -17,9 +17,6 @@ class Rules(object):
 class Indexes(object):
 
     def __init__(self, date=None, counterparty=None, amount=None, account=None, currency=None, tx_type=None, amount_in=None):
-        print("-------" + str(amount))
-        print("-------" + str(account))
-        
         self.date = date
         self.counterparty = counterparty
         self.amount = amount
@@ -96,30 +93,12 @@ class Config(object):
         return Config(csv, indexes, rules)
 
 
-def init_config(help_message, file):
+def init_config(file, debug):
 
     yaml.add_constructor(u'!Config', Config.load)
-
-    # parser = argparse.ArgumentParser(
-    #     description=help_message
-    # )
-
-    # parser.add_argument(
-    #     "-f",
-    #     "--file",
-    #     help="Configuration file to load",
-    #     required=True,
-    # )
-
-    # parser.add_argument(
-    #     "-v", "--debug", required=False, default=False, action="store_true"
-    # )
-
-    # args = parser.parse_args()
-    # args.file ??
 
     with open(file, 'r') as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
 
-    #config.debug = args.debug    
+    config.debug = debug    
     return config

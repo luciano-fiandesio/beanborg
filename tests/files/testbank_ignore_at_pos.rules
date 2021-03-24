@@ -1,6 +1,0 @@
-rules:
-    
-    - 
-        name: Ignore_By_StringAtPos
-        ignore_string_at_pos: 
-            - waiting;4

@@ -28,5 +28,6 @@ rules:
   force_negative: true
   invert_negative: true
   ruleset:
-    - name: hello_rule
-      test: 1
+    - name: My_Custom_Rule
+      from: Assets:UK:Alice:Savings
+      to: Assets:UK:Alice:Cash

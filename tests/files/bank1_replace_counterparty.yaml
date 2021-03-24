@@ -28,5 +28,4 @@ rules:
   force_negative: true
   invert_negative: true
   ruleset:
-    - name: hello_rule
-      test: 1
+    - name: Replace_Payee

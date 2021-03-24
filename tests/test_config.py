@@ -3,10 +3,9 @@ from beanborg.rule_engine.Context import *
 from beanborg.rule_engine.decision_tables import *
 from beanborg.config import *
 
-
 def test_config1():
 
-    config = init_config('test', 'tests/files/bank1.yaml')
+    config = init_config('tests/files/bank1.yaml', False)
 
     assert config.csv.download_path == "/Users/luciano/Desktop"
     assert config.csv.name == "bbk_statement"
@@ -32,4 +31,9 @@ def test_config1():
     assert config.rules.default_expense == "Expense:Magic"
     assert config.rules.force_negative == True
     assert config.rules.invert_negative == True
+
+    assert len(config.rules.ruleset) == 1
+    assert config.rules.ruleset[0]['name'] == 'hello_rule'
+    assert config.rules.ruleset[0]['test'] == 1
+    
     
