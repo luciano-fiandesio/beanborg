@@ -11,10 +11,12 @@ from datetime import datetime
 import sys
 import shutil
 from config import *
+from arg_parser import *
 
 def main():
 
-    config = init_config("Archives imported CVS file")
+    args = eval_args('Archives imported CVS file')
+    config = init_config(args.file, args.debug)
     
     target_csv = config.csv.target + '/' + config.csv.ref + ".csv"
 

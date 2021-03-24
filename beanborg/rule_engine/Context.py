@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Context:
-    # rule file
-    rules: str
+    # ruleset
+    ruleset: []
     # custom rules folder
     rules_dir: str
     date_fomat: str

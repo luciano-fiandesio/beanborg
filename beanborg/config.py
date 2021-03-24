@@ -3,7 +3,7 @@ import argparse
 
 class Rules(object):
 
-    def __init__(self, bc_file=None, rules_folder=None, rules_file=None, account=None, currency=None, default_expense=None, force_negative=None, invert_negative=None):
+    def __init__(self, bc_file=None, rules_folder=None, rules_file=None, account=None, currency=None, default_expense=None, force_negative=None, invert_negative=None, ruleset=[]):
         self.bc_file = bc_file
         self.rules_folder = rules_folder
         self.rules_file = rules_file
@@ -12,6 +12,7 @@ class Rules(object):
         self.default_expense = default_expense
         self.force_negative = force_negative
         self.invert_negative = invert_negative
+        self.ruleset = ruleset
 
 class Indexes(object):
 
@@ -19,7 +20,7 @@ class Indexes(object):
         self.date = date
         self.counterparty = counterparty
         self.amount = amount
-        self.account = amount
+        self.account = account
         self.currency = currency
         self.tx_type = tx_type
         self.amount_in = amount_in
@@ -60,7 +61,7 @@ class Config(object):
             csv_data['date_format'],
             csv_data.get('skip', 1),
             csv_data.get('target', 'tmp'),
-            csv_data.get('archive', 'archive')
+            csv_data.get('archive_path', 'archive')
         )
 
         idx = values['indexes'] 
@@ -69,6 +70,7 @@ class Config(object):
             idx.get('date', 0), 
             idx.get('counterparty', 3),
             idx.get('amount', 4),
+            idx.get('account', 1),
             idx.get('currency', 5),
             idx.get('tx_type', 2),
             idx.get('amount_in', None)
@@ -83,49 +85,20 @@ class Config(object):
             rls.get('currency', None),
             rls.get('default_expense', 'Expense:Unknown'),
             rls.get('force_negative', False),
-            rls.get('invert_negative', False)
+            rls.get('invert_negative', False),
+            rls.get('ruleset', [])
         )
 
 
         return Config(csv, indexes, rules)
 
 
-def init_config(help_message):
+def init_config(file, debug):
 
     yaml.add_constructor(u'!Config', Config.load)
 
-    parser = argparse.ArgumentParser(
-        description=help_message
-    )
-
-    parser.add_argument(
-        "-f",
-        "--file",
-        help="Configuration file to load",
-        required=True,
-    )
-
-    parser.add_argument(
-        "-v", "--debug", required=False, default=False, action="store_true"
-    )
-
-    args = parser.parse_args()
-
-
-    with open(args.file, 'r') as file:
+    with open(file, 'r') as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
 
-    config.debug = args.debug    
+    config.debug = debug    
     return config
-
-
-if __name__ == '__main__':
-    a = Config("a", "b", "c")
-
-    print("path: %s, name: %s, ref: %s, target: %s" %
-          (a.path, a.name, a.ref, a.target))
-
-    a = Config.mover("pippo", "pluto", "paperino")
-
-    print("path: %s, name: %s, ref: %s, target: %s" %
-          (a.path, a.name, a.ref, a.target))

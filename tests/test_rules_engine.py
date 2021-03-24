@@ -1,11 +1,12 @@
 from beanborg.rule_engine.rules_engine import RuleEngine
 from beanborg.rule_engine.Context import *
 from beanborg.rule_engine.decision_tables import *
+from beanborg.config import *
 
 
 def test_payee_replacement():
 
-    rule_engine = make_rule_engine("testbank_payee.rules")
+    rule_engine = make_rule_engine('tests/files/bank1_replace_counterparty.yaml')
 
     entries = "31.10.2019,b,auszahlung,electro ford,x,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
@@ -14,7 +15,7 @@ def test_payee_replacement():
 
 def test_asset_replacement():
 
-    rule_engine = make_rule_engine("testbank_asset.rules")
+    rule_engine = make_rule_engine('tests/files/bank1_replace_asset.yaml')
     entries = "31.10.2019,b,auszahlung,electro ford,x,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
     assert tx.postings[0].account == "Assets:Bob:Savings"
@@ -22,7 +23,7 @@ def test_asset_replacement():
 
 def test_expense_replacement():
 
-    rule_engine = make_rule_engine("testbank_account.rules")
+    rule_engine = make_rule_engine('tests/files/bank1_replace_expense.yaml')
     entries = "31.10.2019,b,auszahlung,freshfood Bonn,x,ZZ03100400000608903100".split(
         ","
     )
@@ -32,7 +33,8 @@ def test_expense_replacement():
 
 def test_ignore():
 
-    rule_engine = make_rule_engine("testbank_ignore.rules")
+    rule_engine = make_rule_engine('tests/files/bank1_ignore_by_counterparty.yaml')
+    
     entries = "31.10.2019,b,auszahlung,alfa,x,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
     assert tx == None
@@ -44,7 +46,7 @@ def test_ignore():
 
 def test_ignore_at_position():
 
-    rule_engine = make_rule_engine("testbank_ignore_at_pos.rules")
+    rule_engine = make_rule_engine('tests/files/bank1_ignore_at_pos.yaml')
     entries = "31.10.2019,b,auszahlung,alfa,waiting,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
     assert tx == None
@@ -52,7 +54,7 @@ def test_ignore_at_position():
 
 def test_custom_rule():
 
-    rule_engine = make_rule_engine("testbank_custom.rules")
+    rule_engine = make_rule_engine('tests/files/bank1_custom_rule.yaml')
     entries = "31.10.2019,b,Withdrawal,alfa,waiting,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
     
@@ -71,7 +73,7 @@ def test_no_rulefile():
             payee_pos=3,
             tx_type_pos=2,
             account_pos=5,
-            rules=None,
+            ruleset=None,
             assets=init_decision_table("tests/files/asset.rules"),
             accounts=init_decision_table("tests/files/account.rules"),
             payees=init_decision_table("tests/files/payee.rules")
@@ -84,9 +86,12 @@ def test_no_rulefile():
     # no exception - the transaction is empty    
     assert tx
 
-def make_rule_engine(rule_file):
+def make_rule_engine(config_file):
+    config = init_config(config_file, False)
+    
     return RuleEngine(
         Context(
+            ruleset=config.rules.ruleset,
             rules_dir="tests/files",
             account=None,
             date_fomat="%d.%m.%Y",
@@ -95,7 +100,6 @@ def make_rule_engine(rule_file):
             payee_pos=3,
             tx_type_pos=2,
             account_pos=5,
-            rules="tests/files/" + rule_file,
             assets=init_decision_table("tests/files/asset.rules"),
             accounts=init_decision_table("tests/files/account.rules"),
             payees=init_decision_table("tests/files/payee.rules"),

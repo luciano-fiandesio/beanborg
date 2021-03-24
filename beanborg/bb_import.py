@@ -13,6 +13,7 @@ import sys
 import random
 import traceback
 from config import *
+from arg_parser import *
 from beancount.parser.printer import format_entry
 from beancount.core.data import Transaction, Amount
 from beancount.core.number import D
@@ -37,16 +38,10 @@ def init_rule_engine(args):
     the configuration file
     """
     folder = args.rules.rules_folder
-    rule_file = args.rules.rules_file
-
+    
     # make sure the rules folder exists
     if not os.path.isdir(folder):
         print("The rule folder %s does not exist!"%(folder))
-        sys.exit(-1)
-
-    # make sure the rules files exists
-    if not os.path.isfile(folder + "/" + rule_file):
-        print("The rule file %s does not exist!"%(rule_file))
         sys.exit(-1)
 
     if not os.path.isfile(folder + "/asset.rules") and args.account is None:
@@ -59,11 +54,11 @@ def init_rule_engine(args):
             date_fomat=args.csv.date_format,
             default_expense=args.rules.default_expense,
             date_pos=args.indexes.date,
-            payee_pos=args.indexes.payee,
+            payee_pos=args.indexes.counterparty,
             tx_type_pos=args.indexes.tx_type,
             account_pos=args.indexes.account,
             account=args.rules.account,
-            rules=folder + "/" + rule_file,
+            ruleset=args.rules.ruleset,
             rules_dir=folder,
             assets=init_decision_table(folder + "/asset.rules"),
             accounts=init_decision_table(folder + "/account.rules"),
@@ -133,8 +128,10 @@ def resolve_amount(row, args):
 
 def main():
 
-    args = init_config("Parse bank csv file and import into beancount")
 
+    options = eval_args('Parse bank csv file and import into beancount')
+    args = init_config(options.file, options.debug)
+    
     import_csv = args.csv.target + '/' + args.csv.ref + '.csv' 
 
     if not os.path.isfile(import_csv):

@@ -1,0 +1,31 @@
+--- !Config
+csv:
+  download_path: "/Users/luciano/Desktop"
+  name: bbk_statement
+  bank_ref: bbk
+  target: tmp2
+  archive_path: archive2
+  separator: '|'
+  date_format: "%d/%m/%Y"
+  currency_sep: ","
+  skip: 3
+  
+indexes:
+  date: 8
+  counterparty: 9 
+  amount: 10
+  account: 11
+  currency: 12
+  tx_type: 13
+  amount_in: 14
+  
+rules:
+  beancount_file: 'main1.ldg'
+  #rules_file: luciano.amex.rules
+  account: '1234567'
+  currency: GBP
+  default_expense: 'Expense:Magic'
+  force_negative: true
+  invert_negative: true
+  ruleset:
+    - name: Replace_Asset
