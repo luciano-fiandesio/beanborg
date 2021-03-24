@@ -83,47 +83,38 @@ class RuleEngine:
             print(u"\u26A0" + " no rules file spefified for this financial institution")
             self.rules = {}
         else:
-            try:
-                for yrule in self._ctx.ruleset:
-                    rule_name = yrule["name"]  # rule name
-                    xfrom = yrule.get("from")  # Account from
-                    xto = yrule.get("to")  # Account to
-                    xpos = yrule.get("csv_index")  # CSV index (base 0)
-                    # Payee string to ignore
-                    xignore = yrule.get("ignore_payee")
-                    # semicolon separated strings
-                    xstring = yrule.get("csv_values")
-                    xignorepos = yrule.get("ignore_string_at_pos")
+            for yrule in self._ctx.ruleset:
+                rule_name = yrule["name"]  # rule name
+                xfrom = yrule.get("from")  # Account from
+                xto = yrule.get("to")  # Account to
+                xpos = yrule.get("csv_index")  # CSV index (base 0)
+                # Payee string to ignore
+                xignore = yrule.get("ignore_payee")
+                # semicolon separated strings
+                xstring = yrule.get("csv_values")
+                xignorepos = yrule.get("ignore_string_at_pos")
 
-                    if rule_name in custom_rules:
-                        # print('custom-rule')
-                        self.rules[rule_name] = RuleDef(
-                            custom_rules[rule_name],
-                            xfrom,
-                            xto,
-                            xpos,
-                            xignore,
-                            xstring,
-                            xignorepos,
-                        )
-                    else:
-                        self.rules[rule_name] = RuleDef(
-                            globals()[rule_name],
-                            xfrom,
-                            xto,
-                            xpos,
-                            xignore,
-                            xstring,
-                            xignorepos,
-                        )
-
-            except KeyError as ke:
-                sys.exit(
-                    "The rule file references a rule that does not exist: " + str(ke))
-
-            except Exception as e:
-                # print(str(e))
-                sys.exit("The rule file " + self._ctx.rules + " is invalid!")
+                if rule_name in custom_rules:
+                    # print('custom-rule')
+                    self.rules[rule_name] = RuleDef(
+                        custom_rules[rule_name],
+                        xfrom,
+                        xto,
+                        xpos,
+                        xignore,
+                        xstring,
+                        xignorepos,
+                    )
+                else:
+                    self.rules[rule_name] = RuleDef(
+                        globals()[rule_name],
+                        xfrom,
+                        xto,
+                        xpos,
+                        xignore,
+                        xstring,
+                        xignorepos,
+                    )
 
     def load_custom_rules(self):
 

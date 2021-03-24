@@ -10,10 +10,12 @@ import sys
 import glob
 import yaml
 from config import *
+from arg_parser import *
 
 def main():
     
-    config = init_config("Move bank csv file to processing folder")
+    args = eval_args('Move bank csv file to processing folder')
+    config = init_config(args.file, args.debug)
     
     if not os.path.isdir(config.csv.download_path):
         print("folder: %s does not exist!"%(config.csv.download_path))
