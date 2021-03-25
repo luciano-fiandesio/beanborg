@@ -32,7 +32,8 @@ Other features:
 
 - sophisticated and extendible rule based system
 - avoid duplicates during import 
-- high degree of configurability 
+- high degree of configurability
+- smart archiving function: when archiving a CSV file, the file is renamed using the start and end date of the CSV file
 
 ## Installation
 

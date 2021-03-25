@@ -1,0 +1,8 @@
+option "title" "Shared Ledger"
+option "operating_currency" "EUR"
+
+include "accounts.ldg"
+;include "budget.ldg"
+
+include "UK0000001444555.ldg"
+;include "BANK200000.ldg"

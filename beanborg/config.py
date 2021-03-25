@@ -77,7 +77,8 @@ class Config(object):
             idx.get('amount_in', None)
         )
 
-        rls = values['rules']
+        rls = values.get('rules', dict())
+        
         rules = Rules(
             rls.get('beancount_file', 'main.ldg'),
             rls.get('rules_folder', 'rules'),
@@ -88,7 +89,6 @@ class Config(object):
             rls.get('invert_negative', False),
             rls.get('ruleset', [])
         )
-
 
         return Config(csv, indexes, rules)
 

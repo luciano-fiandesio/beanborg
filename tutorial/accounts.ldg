@@ -1,0 +1,27 @@
+; account opening declaration
+2000-01-01 open Equity:Opening-Balances
+
+; *** ASSETS ***
+; Bob
+2000-01-01 open Assets:Bank1:Bob:Current     EUR
+
+
+
+; *** EXPENSES ***
+2000-01-01 open Expenses:Unknown
+; monthly expenses
+2000-01-01 open Expenses:Groceries
+2000-01-01 open Expenses:Medical
+2000-01-01 open Expenses:EatingOut
+2000-01-01 open Expenses:Utilities:Electricity
+2000-01-01 open Expenses:Utilities:Gas
+2000-01-01 open Expenses:Utilities:Internet
+
+; *** INCOME *** 
+2000-01-01 open Income:Salary:Company1
+2000-01-01 open Income:Salary:Company2
+2000-01-01 open Income:Sale:Ebay
+
+
+; *** LIABILITIES *** 
+2000-01-01 open Liabilities:Master:Alice

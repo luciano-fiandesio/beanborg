@@ -37,17 +37,21 @@ def init_rule_engine(args):
     Initialize the import rule engine using the arguments from
     the configuration file
     """
+        
     folder = args.rules.rules_folder
-    
-    # make sure the rules folder exists
-    if not os.path.isdir(folder):
-        print("The rule folder %s does not exist!"%(folder))
-        sys.exit(-1)
+        
+    if len(args.rules.ruleset) > 1:
+        
+        # make sure the rules folder exists
+        if not os.path.isdir(folder):
+            print("The rule folder '%s' does not exist!"%(folder))
+            sys.exit(-1)
 
-    if not os.path.isfile(folder + "/asset.rules") and args.account is None:
+        if not os.path.isfile(folder + "/asset.rules") and args.rules.account is None:
 
-        print('Please specify an account id string (using the -a flag)'
-              'or create an entry in the asset.rules file')
+            print('Please specify an account in your config file '
+                  'or create an entry in the asset.rules file')
+            sys.exit(-1)
 
     return RuleEngine(
         Context(
@@ -197,7 +201,7 @@ def main():
                         if tx.postings[0].account is None:
                             raise Exception(
                                 'Unable to resolve the account, '
-                                'please check that the `Replace_Asset` rule'
+                                'please check that the `Replace_Asset` rule '
                                 'is in use for this account'
                             )
 
