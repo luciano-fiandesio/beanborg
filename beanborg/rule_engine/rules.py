@@ -5,6 +5,22 @@ from .Context import Context
 from beancount.core.data import Transaction, Posting, Amount, Close, Open
 from .decision_tables import *
 
+class LookUpCache:
+    """
+    Simple cache for lookup tables
+    """
+
+    cache = dict()
+
+    @staticmethod
+    def init_decision_table(key, path):
+
+        if key in LookUpCache.cache:
+            return LookUpCache.cache[key]
+
+        data = init_decision_table(path)
+        LookUpCache.cache[key] = data
+        return data   
 
 class Rule:
     __metaclass__ = abc.ABCMeta
@@ -113,7 +129,7 @@ class Replace_Payee(Rule):
             False,
             tx._replace(
                 payee=resolve_from_decision_table(
-                    init_decision_table(self.context.rules_dir + "/payee.rules"),
+                    LookUpCache.init_decision_table("payee", self.context.rules_dir + "/payee.rules"),
                     csv_line[self.context.payee_pos],
                     csv_line[self.context.payee_pos],
                 )
@@ -142,7 +158,7 @@ class Replace_Asset(Rule):
             asset = self.context.force_account
         else:
             asset = resolve_from_decision_table(
-                init_decision_table(self.context.rules_dir + "/asset.rules"),
+                LookUpCache.init_decision_table("asset", self.context.rules_dir + "/asset.rules"),
                 self.context.account
                 if self.context.account is not None
                 else csv_line[self.context.account_pos],
@@ -169,7 +185,7 @@ class Replace_Expense(Rule):
 
     def execute(self, csv_line, tx=None, ruleDef=None):
         expense = resolve_from_decision_table(
-            init_decision_table(self.context.rules_dir + "/account.rules"),
+            LookUpCache.init_decision_table("account", self.context.rules_dir + "/account.rules"),
             csv_line[self.context.payee_pos],
             self.context.default_expense,
         )
