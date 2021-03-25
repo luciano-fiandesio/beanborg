@@ -77,7 +77,7 @@ The configuration file is used by the import scripts to determine the CSV file s
 
 ### Structure of a configuration file
 
-[Example](#### Sample configuration file)
+[Example](####Sample configuration file)
 
 A Beanborg configuration must start with the `--- !Config` tag and has 3 main sections:
 
@@ -125,7 +125,7 @@ Each Beancount asset (bank account, credit card, etc.) to which you want to impo
 2019-01-01 open Assets:Bob:Savings      EUR
 ```
 
-#### Sample configuration file
+####Sample configuration file
 
 ```
 --- !Config
