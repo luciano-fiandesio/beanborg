@@ -74,8 +74,11 @@ During a normal import operation, the CSV file is downloaded from the bank app -
 
 Let's look at this initial configuration.
 The `name` property is required to find the CSV file in the path specified by the `download_path` property. It is enough to specify the first letters of the CSV file, without the `csv` extension.
+
 The `bank_ref` property is very important, because it is used by Beanborg to rename the CSV file and move it to the staging area. If one has multiple bank accounts to import, it is important that the value of `bank_ref` is unique.
+
 The `date_format`, `separator` and `currency_sep` should be self-explanatory.
+
 We don't need to specify the `skip` property, since the default value is `1`.
 
 Let's try to import the CVS file into the working area, using `bb_mover.py`.
