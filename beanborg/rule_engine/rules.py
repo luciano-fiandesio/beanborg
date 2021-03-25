@@ -113,7 +113,7 @@ class Replace_Payee(Rule):
             False,
             tx._replace(
                 payee=resolve_from_decision_table(
-                    self.context.payees,
+                    init_decision_table(self.context.rules_dir + "/payee.rules"),
                     csv_line[self.context.payee_pos],
                     csv_line[self.context.payee_pos],
                 )
@@ -127,19 +127,28 @@ class Replace_Asset(Rule):
     This rule is useful to assign the correct source account of a CSV transaction.
     
     The rule is based on the 'asset.rules' look-up file.
+    If no 'asset.rules' file is found, the account will be resolved to "Assets:Unknown" or
+    to the value of the property `rules.origin_account` of the config file.
     """
     
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
 
     def execute(self, csv_line, tx=None, ruleDef=None):
-        asset = resolve_from_decision_table(
-            self.context.assets,
-            self.context.account
-            if self.context.account is not None
-            else csv_line[self.context.account_pos],
-            "Assets:Unknown",
-        )
+
+        asset = None
+        
+        if self.context.force_account:
+            asset = self.context.force_account
+        else:
+            asset = resolve_from_decision_table(
+                init_decision_table(self.context.rules_dir + "/asset.rules"),
+                self.context.account
+                if self.context.account is not None
+                else csv_line[self.context.account_pos],
+                defaultAsset,
+            )
+        
         if asset:
             posting = Posting(asset, None, None, None, None, None)
             new_postings = [posting] + [tx.postings[1]]
@@ -160,7 +169,7 @@ class Replace_Expense(Rule):
 
     def execute(self, csv_line, tx=None, ruleDef=None):
         expense = resolve_from_decision_table(
-            self.context.accounts,
+            init_decision_table(self.context.rules_dir + "/account.rules"),
             csv_line[self.context.payee_pos],
             self.context.default_expense,
         )

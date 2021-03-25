@@ -15,7 +15,7 @@ import traceback
 from config import *
 from arg_parser import *
 from beancount.parser.printer import format_entry
-from beancount.core.data import Transaction, Amount
+from beancount.core.data import Transaction, Amount, Posting
 from beancount.core.number import D
 import beancount.loader as loader
 
@@ -64,9 +64,7 @@ def init_rule_engine(args):
             account=args.rules.account,
             ruleset=args.rules.ruleset,
             rules_dir=folder,
-            assets=init_decision_table(folder + "/asset.rules"),
-            accounts=init_decision_table(folder + "/account.rules"),
-            payees=init_decision_table(folder + "/payee.rules"),
+            force_account=args.rules.origin_account
         )
     )
 
@@ -112,7 +110,7 @@ def get_currency(row, args):
 
 def resolve_amount(row, args):
     """
-    aaa
+    TODO
     """
     # Get the amount from the line
     val = row[args.indexes.amount].strip()
@@ -178,8 +176,20 @@ def main():
                     tx = rule_engine.execute(row)
 
                     if tx:
-
-                        # sreplace date """
+                        """ 
+                        Handle the origin account: if the tx processed by the
+                        rules engin has no origin account, try to assign one
+                        from the property file: args.rules.origin_account 
+                        """ 
+                        if tx.postings[0].account is None:
+                            raise Exception(
+                                'Unable to resolve the origin account for this transaction, '
+                                'please check that the `Replace_Asset` rule '
+                                'is in use for this account or set the `origin_account` property '
+                                'in the config file.'
+                            )
+                    
+                        # replace date """
                         tx = tx._replace(date=str(tx_date.date()))
 
                         # add md5 and csv """
@@ -197,13 +207,6 @@ def main():
 
                         if args.debug:
                             print(tx)
-
-                        if tx.postings[0].account is None:
-                            raise Exception(
-                                'Unable to resolve the account, '
-                                'please check that the `Replace_Asset` rule '
-                                'is in use for this account'
-                            )
 
                         # generate a key based on:
                         # - the tx date

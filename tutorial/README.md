@@ -108,8 +108,12 @@ This image should hopefully makes the concept more clear:
 
 Beanborg is now able to map the most relevant information of the CSV file with the Beancount structure and create a valid transaction.
 
-The last section of the configuration relates to rules. Rules can be considered as a list of actions that are executed one after the other and are applied to each row of the CSV file we want to import.
+The last section of the configuration relates to rules. 
+
+Rules can be considered as a list of "actions" that are executed one after the other and are applied to each row of the CSV file we want to import.
+
 There are different type of rules: some can be used to change the Accounts of a transaction or ignore a specific transaction.
+
 Let's focus on a simple rule, that will assign the correct Expense to each transaction in our CSV file. 
 
 

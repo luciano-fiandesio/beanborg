@@ -95,7 +95,6 @@ class RuleEngine:
                 xignorepos = yrule.get("ignore_string_at_pos")
 
                 if rule_name in custom_rules:
-                    # print('custom-rule')
                     self.rules[rule_name] = RuleDef(
                         custom_rules[rule_name],
                         xfrom,
@@ -115,6 +114,28 @@ class RuleEngine:
                         xstring,
                         xignorepos,
                     )
+        # assign default rules, if they are not already specified
+        if 'Replace_Payee' not in self.rules:
+            self.rules['Replace_Payee'] = RuleDef(
+                        globals()['Replace_Payee'],
+                        xfrom,
+                        xto,
+                        xpos,
+                        xignore,
+                        xstring,
+                        xignorepos,
+                    )
+        if 'Replace_Asset' not in self.rules:
+            self.rules['Replace_Asset'] = RuleDef(
+                        globals()['Replace_Asset'],
+                        xfrom,
+                        xto,
+                        xpos,
+                        xignore,
+                        xstring,
+                        xignorepos,
+                    )
+
 
     def load_custom_rules(self):
 
