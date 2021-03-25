@@ -125,7 +125,7 @@ Each Beancount asset (bank account, credit card, etc.) to which you want to impo
 2019-01-01 open Assets:Bob:Savings      EUR
 ```
 
-####Sample configuration file
+#### Sample configuration file
 
 ```
 --- !Config
