@@ -5,10 +5,9 @@ import sys
 
 class Rules(object):
 
-    def __init__(self, bc_file=None, rules_folder=None, rules_file=None, account=None, currency=None, default_expense=None, force_negative=None, invert_negative=None, ruleset=[]):
+    def __init__(self, bc_file=None, rules_folder=None, account=None, currency=None, default_expense=None, force_negative=None, invert_negative=None, ruleset=[]):
         self.bc_file = bc_file
         self.rules_folder = rules_folder
-        self.rules_file = rules_file
         self.account = account
         self.currency = currency
         self.default_expense = default_expense
@@ -82,7 +81,6 @@ class Config(object):
         rules = Rules(
             rls.get('beancount_file', 'main.ldg'),
             rls.get('rules_folder', 'rules'),
-            rls.get('rules_file', csv.ref + '.rules'),
             rls.get('account', None),
             rls.get('currency', None),
             rls.get('default_expense', 'Expenses:Unknown'),

@@ -1,76 +1,89 @@
-# BEANBORG
-
-Helper scripts for quick Plain Text Accounting using [Beancount](http://furius.ca/beancount/).
+Beanborg automatically imports financial transactions from external CSV files into the [Beancount](http://furius.ca/beancount/) bookkeeping system.
 
 ## Requirements
 
 - Python 3
-- Beancount
+- Beancount v2
 
-## Goals
+## Goals and key features
 
-The main goal of this set of scripts is to import financial transactions from a financial institution's CSV file into the Beancount ledger and automatically assign the correct Expense account to the transaction.
+Beanborg has two main design goals:
 
-For instance, given the following CSV entry:
+- automatic matching of transaction data with the correct Expense accounts
+- speed, the tool is designed to process several financial CSV file in few seconds
 
-```
-04.11.2020;04.11.2020;Direct Debit;"Fresh Food";-21,30;EUR;0000001;UK0000001444555
-```
-
-will be imported by assigning the Account "Expense:Grocery" to the transaction:
+Given the following transaction from a CSV file:
 
 ```
-2020-11-04 * "Fresh Food" ""
+04.11.2020;04.11.2020;Direct Debit;"Fresh Food Inc.";-21,30;EUR;0000001;UK0000001444555
+```
+
+Beanborg import the transaction in Beancount and assign the Account "Expense:Grocery" to the transaction:
+
+```
+2020-11-04 * "Fresh Food Inc." ""
 csv: "04.11.2020,04.11.2020,Direct Debit,Fresh Food,-21,30,EUR,0000001,UK0000001444555"
 md5: "60a54f6ed13ae7b7e70fd475eb677511"
 Assets:Bank1:Bob:Current  -21.30 EUR
 Expenses:Grocery      
 ```
 
-The automatic categorization is rule-based. The scripts come with a set of standard rules, but it is possible to add custom rules that open up to different type of use-cases.
+Other features:
+
+- sophisticated and extendible rule based system
+- avoid duplicates during import 
+- high degree of configurability 
 
 ## Installation
 
-Clone this repository and add the `beanborg` folder to your shell's ath.
+Currently, it is not possible to install beanborg using `pip`. This feature will be added soon. Stay tuned!
+
+### Installation steps
+
+Clone this repository and add the `beanborg` folder to your shell's path.
 
 ```
 git clone https://github.com/luciano-fiandesio/beanborg
 
 # Bash: add the following to your ~/.profile or ~/.bash_profile
 
-PATH=$PATH:~/../beanborg
+PATH=$PATH:~/../beanborg/beaborg
 
 # Fish: add the following to your config.fish file 
 
-fish_add_path ~/../beanborg
+fish_add_path ~/../beanborg/beanborg
 ```
 
 ## Workflow
 
-This set of scripts is based on a very specific workflow, which may or may not work for you.
+Beanborg is based on a very specific workflow, which may or may not work for you.
 
 The workflow is based on 3 distinct stages:
 
-- Move a downloaded bank CSV file into the stage area
+- Move a CSV file downloaded from a bank/financial institution website into the stage area
 - Import the CSV file into Beancount ledger and automatically categorize the transactions
 - Move the bank CSV file into archive area
 
-The first stage is executed by the `bb_mover` script.
-The second stage is executed by the `bb_import` script.
-The third stage is executed by the `bb_clean` script.
+The first stage is executed by the `bb_mover.py` script.
+
+The second stage is executed by the `bb_import.py` script.
+
+The third stage is executed by the `bb_clean.py` script.
 
 ### Configuration
 
 Each financial institution from which data will be imported, must have a dedicated yaml configuration file.
-The configuration file is used by the import scripts to determine the CSV file structure and other information.
+The configuration file is used by the import scripts to determine the CSV file structure and other information, including which rules to apply.
 
 ### Structure of a configuration file
 
-A Beanborg configuration must start with `--- !Config` and has 3 sections:
+[Example](#### Sample configuration file)
+
+A Beanborg configuration must start with the `--- !Config` tag and has 3 main sections:
 
 #### csv
 
-This section of the configuration file determines the options related to the structure and localtion of the CVS file.
+The `csv` section of the configuration file determines the options related to the structure and localtion of the CVS file.
 These are the list of options for the `csv` section:
 
 | Property      | Description                                                                                                                                                                                      | Default | Example             |
@@ -87,7 +100,7 @@ These are the list of options for the `csv` section:
 
 #### indexes
 
-The `indexes` section of the configuration file allows to configure how to map each CSV "column" (or index) to the information required to parse and import the data. In other words, each option is used by Beanborg to determine where the `date` or `amount` of each transaction is located on the CVS file.
+The `indexes` section of the configuration file allows to map each CSV "column" (or index) to the information required to parse and import the data. In other words, each option is used by Beanborg to determine where the `date` or `amount` of each transaction is located on the CVS file.
 
 Note that the first index starts from `0`.
 
@@ -96,9 +109,10 @@ Note that the first index starts from `0`.
 | date         | The index corresponding to the date of the transaction                                                                                                                                           | 0       |
 | counterparty | The index corresponding to the name of the counterparty of the transaction                                                                                                                       | 3       |
 | amount       | The index corresponding to the amount of the transaction (either debit or credit)                                                                                                                | 4       |
+| account      | The index corresponding to the account of the transaction (e.g. the IBAN or ABA code)                                                                                      | 1       |
 | currency     | The index corresponding to the currency of the transaction                                                                                                                                       | 5       |
 | tx_type      | The index corresponding to the transaction type                                                                                                                                                  | 2       |
-| amount_in    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the  index corresponding to the credited amount of the transaction |         |
+| amount_in    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the index corresponding to the credited amount |         |
 
 
 #### rules
@@ -134,8 +148,55 @@ rules:
   currency: USD
 ```
 
+### Rules
 
-### Stage 1: move bank file
+The beanborg's rules engine comes with a number of preexisting rules. Rules are always referenced by name and can be used to assign an account to a transaction, ignore a transaction or replace the name of a transaction's conterparty.
+Some rules require a look-up table file in order to find the right value and execute the rule action.
+
+A look-up table file is also a CSV file, composed of 3 columns: `value`, `expression`, `result`.
+
+- The `value` represents the string that the rule has to search for.
+- The `expression` represents the matching criteria: `equals`, `startsWith`, `endsWith`, `contains`
+- The `result` represents the rule's output
+
+#### Replace_Payee
+
+This rule can be used to replace the name of a counterparty. This rule requires a look-up file named `payee.rules` located in the directory defined by the `rules.rules_folder` option of the config file.
+
+Example: we want to add this transaction to the ledger, but we want to replace "Fresh Food Inc." with "FRESH FOOD".
+
+```
+04.11.2020;04.11.2020;Direct Debit;"Fresh Food Inc.";-21,30;EUR;0000001;UK0000001444555
+```
+
+Add the `Replace_Payee` rule to the list of rules in the configuration file for the target financial institution and add this entry to the `payee.rules` file:
+
+```
+Fresh Food Inc.;equals;FRESH FOOD
+```
+
+#### Replace_Expense
+
+This rule is used to assign an Account to a transaction based on the value of the `counterparty` index of the CSV file. This rule requires a look-up file named `account.rules` located in the directory defined by the `rules.rules_folder` option of the config file.
+
+Example: we want to add this transaction to the ledger and we want to assing the Account `Expenses:Grocery` to the transaction.
+
+```
+04.11.2020;04.11.2020;Direct Debit;"Fresh Food Inc.";-21,30;EUR;0000001;UK0000001444555
+```
+
+Add the `Replace_Expense` rule to the list of rules in the configuration file for the target financial institution and add this entry to the `account.rules` file:
+
+```
+Fresh Food Inc.;equals;Expenses:Groceries
+```
+
+#### Replace_Asset
+
+
+### Custom rules
+
+### Stage 1: move bank CSV file
 
 Download a CSV bank file from your bank and move it to a staging area.
 The script tries to find a file ending with `.csv` and starting with the provided String name and moves it to the target folder.
