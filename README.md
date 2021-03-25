@@ -77,7 +77,7 @@ The configuration file is used by the import scripts to determine the CSV file s
 
 ### Structure of a configuration file
 
-[Example](####Sample configuration file)
+[Example](####sample-configuration-file)
 
 A Beanborg configuration must start with the `--- !Config` tag and has 3 main sections:
 
