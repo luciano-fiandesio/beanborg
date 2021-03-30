@@ -74,9 +74,8 @@ def test_no_rulefile():
             tx_type_pos=2,
             account_pos=5,
             ruleset=None,
-            assets=init_decision_table("tests/files/asset.rules"),
-            accounts=init_decision_table("tests/files/account.rules"),
-            payees=init_decision_table("tests/files/payee.rules")
+            force_account=None,
+            debug=False
         )
     )
 
@@ -100,8 +99,7 @@ def make_rule_engine(config_file):
             payee_pos=3,
             tx_type_pos=2,
             account_pos=5,
-            assets=init_decision_table("tests/files/asset.rules"),
-            accounts=init_decision_table("tests/files/account.rules"),
-            payees=init_decision_table("tests/files/payee.rules"),
+            force_account=None,
+            debug=False
         )
     )

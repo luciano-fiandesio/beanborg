@@ -115,26 +115,17 @@ class RuleEngine:
                         xignorepos,
                     )
         # assign default rules, if they are not already specified
-        if 'Replace_Payee' not in self.rules:
-            self.rules['Replace_Payee'] = RuleDef(
-                        globals()['Replace_Payee'],
-                        xfrom,
-                        xto,
-                        xpos,
-                        xignore,
-                        xstring,
-                        xignorepos,
-                    )
-        if 'Replace_Asset' not in self.rules:
-            self.rules['Replace_Asset'] = RuleDef(
-                        globals()['Replace_Asset'],
-                        xfrom,
-                        xto,
-                        xpos,
-                        xignore,
-                        xstring,
-                        xignorepos,
-                    )
+        if ctx.rules_dir: # do not auto-add if there is no rules folder!
+            if 'Replace_Asset' not in self.rules:
+                self.rules['Replace_Asset'] = RuleDef(
+                            globals()['Replace_Asset'],
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
 
 
     def load_custom_rules(self):
@@ -160,7 +151,8 @@ class RuleEngine:
 
         for key in self.rules:
             if not final:
-                print("Executing rule: " + str(self.rules[key].rule))
+                if self._ctx.debug:
+                    print("Executing rule: " + str(self.rules[key].rule))
                 rulez = self.rules[key].rule(key, self._ctx)
                 final, tx = rulez.execute(csv_line, tx, self.rules[key])
 

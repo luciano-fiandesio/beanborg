@@ -26,3 +26,5 @@ class Context:
     account: str
     # Force the Account Origin to the value specifed
     force_account: str
+    # Output debug info
+    debug: bool

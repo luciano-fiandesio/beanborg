@@ -4,6 +4,8 @@
 ; *** ASSETS ***
 ; Bob
 2000-01-01 open Assets:Bank1:Bob:Current     EUR
+2000-01-01 open Assets:Cash:Bob              EUR
+
 
 
 
@@ -13,6 +15,7 @@
 2000-01-01 open Expenses:Groceries
 2000-01-01 open Expenses:Medical
 2000-01-01 open Expenses:EatingOut
+2000-01-01 open Expenses:Clothing
 2000-01-01 open Expenses:Utilities:Electricity
 2000-01-01 open Expenses:Utilities:Gas
 2000-01-01 open Expenses:Utilities:Internet

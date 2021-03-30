@@ -42,12 +42,7 @@ def init_rule_engine(args):
         
     if len(args.rules.ruleset) > 1:
         
-        # make sure the rules folder exists
-        if not os.path.isdir(folder):
-            print("The rule folder '%s' does not exist!"%(folder))
-            sys.exit(-1)
-
-        if not os.path.isfile(folder + "/asset.rules") and args.rules.account is None:
+        if not os.path.isfile(folder + "/asset.rules") and args.rules.account is None and args.rules.origin_account is None:
 
             print('Please specify an account in your config file '
                   'or create an entry in the asset.rules file')
@@ -64,7 +59,8 @@ def init_rule_engine(args):
             account=args.rules.account,
             ruleset=args.rules.ruleset,
             rules_dir=folder,
-            force_account=args.rules.origin_account
+            force_account=args.rules.origin_account,
+            debug=args.debug
         )
     )
 

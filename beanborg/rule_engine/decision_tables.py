@@ -3,12 +3,13 @@
 import csv
 import os
 
-def init_decision_table(file):
+def init_decision_table(file, debug = False):
     table = {}
-    if not os.path.isfile(os.getcwd() + "/" + file):
-        print("The decision table file: " + file + " is missing.")
+    tablefile = os.path.join(os.getcwd(), file)
+    if not os.path.isfile(tablefile) or os.stat(file).st_size == 0:
+        if debug: print("The decision table file: " + file + " is missing or empty.")
     else:
-        with open(os.getcwd() + "/" + file) as csv_file:
+        with open(tablefile) as csv_file:
             csv_reader = csv.reader(decomment(csv_file), delimiter=";")
             next(csv_reader)  # skip first line
             for row in csv_reader:

@@ -134,14 +134,89 @@ bb_import.csv -f config/eagle.yaml
 The script should exit immediately with the following error:
 
 ```
-The rule folder 'rules' does not exist!
+file: rules/account.rules does not exist! - The 'Replace_Expense' rules requires the account.rules file.
 ```
 
 The `Replace_Expense` rules requires an additional look-up table file to map counterparty names to Expense categories.
-This file (named `.rules`) should be located in a folder named `rules` - note that this name can be changed using the `rules_folder` property of the `rules` configuration.
+This file (named `account.rules`) should be located in a folder named `rules` - note that the folder name can be changed using the `rules_folder` property of the `rules` configuration.
 
 Let's create a `rules` folder:
 
 ```
 mkdir rules
 ```
+
+Create a `account.rules` file in the newly created folder and paste the following data:
+
+```
+value;expression;result
+Fresh Food;contains;Expenses:Groceries
+Best Company;contains;Expenses:Clothing
+Doctor Bill;eq;Expenses:Medical
+```
+
+Run `bb_import.csv -f config/eagle.yaml` again and, this time, the import should be successful.
+
+```
+summary:
+
+csv tx count: 		    4
+imported: 		        4
+tx already present: 	0
+ignored by rule 	    0
+error: 			          0
+```
+
+Each row in the CSV file is matched against the `account.rules` file, and if the `counterparty` index matches the first part of the expression (e.g. `Fresh Food`), the second leg of the transaction is replaced with the propert Expenses category, in this case `Expenses:Groceries`.
+
+The `UK0000001444555.ldg` should now contains the four transactions from the CVS file and both "sides" of the transaction should be correctly set - except for one transaction: the cash withdrawal from bank of Mars. We will see how to correctly categorize this transaction as well.
+
+Running the same script again `bb_import.csv -f config/eagle.yaml` will trigger the automatic duplication detection mechanism:
+
+```
+summary:
+
+csv tx count: 	  	  4
+imported: 		        0
+tx already present: 	4
+ignored by rule 	    0
+error: 			          0
+```
+
+Note `tx already present` is set to `4` and `imported` is set to `0`.
+
+At this time, Beanborg does not support executing the rules without importing the data. In order to show how to import the cash withdrawal entry from our sample bank file, we need to delete and recreate the sample ledger file:
+
+```
+rm UK0000001444555.ldg
+touch UK0000001444555.ldg
+```
+
+Let's take a look at the cash withdrawal entry from the CVS file:
+
+```
+01.12.2020;01.11.2020;Cash Withdrawal;Bank Of Mars;-100;EUR;0000001;UK0000001444555
+```
+
+We want to create a transaction that has the origin account set to our bank and the destination account set to `Assets:Cash:Bob`
+We can create a new rule in the `account.rules` file:
+
+```
+Bank Of Mars;contains;Assets:Cash:Bob
+```
+
+but this is probably not such a good idea, because we may have multiple type of transactions from `Bank of Mars`, for instance bank fees.
+Since the CSV entry clearly specifies `Cash Withdrawal` as transaction type, we can simply add a new `Set_Accounts` rule that makes use of the transaction type to assign the accounts to the transaction; add the following rule definition to the `eagle.yaml`:
+
+```
+- name: Set_Accounts
+      from: Assets:Bank1:Bob:Current
+      to: Assets:Cash:Bob
+      csv_index: 2
+      csv_values: Cash Withdrawal
+```
+
+Let's re-run the import script `bb_import.csv -f config/eagle.yaml`: this time all four transactions should be properly categorized.
+
+
+
