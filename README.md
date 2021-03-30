@@ -10,7 +10,7 @@ Beanborg automatically imports financial transactions from external CSV files in
 Beanborg has two main design goals:
 
 - automatic matching of transaction data with the correct Expense accounts
-- speed, the tool is designed to process several financial CSV file in few seconds
+- speed, the tool is designed to process several financial CSV files in few seconds
 
 Given the following transaction from a CSV file:
 
@@ -18,7 +18,7 @@ Given the following transaction from a CSV file:
 04.11.2020;04.11.2020;Direct Debit;"Fresh Food Inc.";-21,30;EUR;0000001;UK0000001444555
 ```
 
-Beanborg import the transaction in Beancount and assign the Account "Expense:Grocery" to the transaction:
+Beanborg imports the transaction in Beancount and assign the Account "Expense:Grocery" to the transaction:
 
 ```
 2020-11-04 * "Fresh Food Inc." ""
@@ -31,8 +31,8 @@ Expenses:Grocery
 Other features:
 
 - sophisticated and extendible rule based system
-- avoid duplicates during import 
-- high degree of configurability
+- duplicated transactions detection 
+- highly configurable
 - smart archiving function: when archiving a CSV file, the file is renamed using the start and end date of the CSV file
 
 ## Tutorial
@@ -41,7 +41,7 @@ A simple tutorial is available [here](https://github.com/luciano-fiandesio/beanb
 
 ## Installation
 
-Currently, it is not possible to install beanborg using `pip`. This feature will be added soon. Stay tuned!
+Currently, it is not possible to install Beanborg using `pip`. This feature will be added soon. Stay tuned!
 
 ### Installation steps
 
@@ -66,8 +66,8 @@ Beanborg is based on a very specific workflow, which may or may not work for you
 The workflow is based on 3 distinct stages:
 
 - Move a CSV file downloaded from a bank/financial institution website into the stage area
-- Import the CSV file into Beancount ledger and automatically categorize the transactions
-- Move the bank CSV file into archive area
+- Import the CSV file into the Beancount ledger and automatically categorize the transactions
+- Move the bank CSV file into the archive area
 
 The first stage is executed by the `bb_mover.py` script.
 
@@ -77,7 +77,7 @@ The third stage is executed by the `bb_clean.py` script.
 
 ### Configuration
 
-Each financial institution from which data will be imported, must have a dedicated yaml configuration file.
+Each financial institution from which data will be imported must have a dedicated YAML configuration file.
 The configuration file is used by the import scripts to determine the CSV file structure and other information, including which rules to apply.
 
 ### Structure of a configuration file
@@ -86,8 +86,8 @@ A Beanborg configuration must start with the `--- !Config` tag and has 3 main se
 
 #### csv
 
-The `csv` section of the configuration file determines the options related to the structure and localtion of the CVS file.
-These are the list of options for the `csv` section:
+The `csv` section of the configuration file determines the options related to the structure and location of the CVS file to import.
+Here are the list of options for the `csv` section:
 
 | Property      | Description                                                                                                                                                                                      | Default | Example             |
 |---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|---------------------|
@@ -103,7 +103,7 @@ These are the list of options for the `csv` section:
 
 #### indexes
 
-The `indexes` section of the configuration file allows to map each CSV "column" (or index) to the information required to parse and import the data. In other words, each option is used by Beanborg to determine where the `date` or `amount` of each transaction is located on the CVS file.
+The `indexes` section of the configuration file allows mapping each CSV "column" (or index) to the information required to parse and import the data. In other words, each option is used by Beanborg to determine where the `date` or `amount` of each transaction is located on the CVS file.
 
 Note that the first index starts from `0`.
 
@@ -122,7 +122,7 @@ Note that the first index starts from `0`.
 
 | Property        | Description                                                                                                                | Default            |
 |-----------------|----------------------------------------------------------------------------------------------------------------------------|--------------------|
-| beancount_file  | The master beancount ledger file. This property is mandatory and it is required to by the duplication detection mechanism. | `main.ldg`         |
+| beancount_file  | The master Beancount ledger file. This property is mandatory and it is required to by the duplication detection mechanism. | `main.ldg`         |
 | rules_folder    | The folder name in which custom rules and look-up tables files are stored                                                  | `rules`            |
 | account         | This property is normally used when a CSV file doesn't contain any account property (IBAN, ABA, account number, etc).      |                    |
 | currency        | Force a default currency                                                                                                   |                    |
@@ -160,8 +160,8 @@ rules:
 
 ### Rules
 
-The beanborg's rules engine comes with a number of preexisting rules. Rules are always referenced by **name** and can be used to assign an account to a transaction, ignore a transaction or replace the name of a transaction's conterparty.
-Some rules require a look-up table file in order to find the right value and execute the rule action.
+The Beanborg's rules engine comes with a number of preexisting rules. Rules are always referenced by **name** and can be used to assign an account to a transaction, ignore a transaction or replace the name of a transaction's counterparty.
+Some rules require a look-up table file to find the right value and execute the rule action.
 
 A look-up table file is also a CSV file, composed of 3 columns: `value`, `expression`, `result`.
 
@@ -175,7 +175,7 @@ The next section lists the rules which are available in Beanborg.
 
 This rule can be used to replace the name of a counterparty. This rule requires a look-up file named `payee.rules` located in the directory defined by the `rules.rules_folder` option of the config file.
 
-Example: we want to add this transaction to the ledger, but we want to replace "Fresh Food Inc." with "FRESH FOOD".
+For example: we want to add this transaction to the ledger, but we want to replace "Fresh Food Inc." with "FRESH FOOD".
 
 ```
 04.11.2020;04.11.2020;Direct Debit;"Fresh Food Inc.";-21,30;EUR;0000001;UK0000001444555
@@ -191,7 +191,7 @@ Fresh Food Inc.;equals;FRESH FOOD
 
 This rule is used to assign an Account to a transaction based on the value of the `counterparty` index of the CSV file. This rule requires a look-up file named `account.rules` located in the directory defined by the `rules.rules_folder` option of the config file.
 
-Example: we want to add this transaction to the ledger and we want to assing the Account `Expenses:Grocery` to the transaction.
+For example: we want to add this transaction to the ledger and we want to assign the Account `Expenses:Grocery` to the transaction.
 
 ```
 04.11.2020;04.11.2020;Direct Debit;"Fresh Food Inc.";-21,30;EUR;0000001;UK0000001444555
@@ -206,7 +206,7 @@ Fresh Food Inc.;equals;Expenses:Groceries
 #### Replace_Asset
 
 Assigns an "origin" account to a transaction, based on value of the `account` index of a CSV file row.
-This rule is useful to assign the correct source account of a CSV transaction. This rule is **implicitely added** to the ruleset, even if it doesn't get declared
+This rule is useful to assign the correct source account of a CSV transaction. This rule is **implicitly added** to the ruleset, even if it doesn't get declared
     
 The rule can resolve the origin account in two ways: 
 
@@ -248,7 +248,7 @@ rules:
 
 #### Set_Accounts
 
-This rule does set the origin and destination account for a given transaction, based on one ore more values of a given CSV index.
+This rule does set the origin and destination account for a given transaction, based on one or more values of a given CSV index.
 
 As an example, let's take this CSV transaction - an ATM withdrawal from a bank.
 
@@ -268,10 +268,10 @@ This is how the `Set_Accounts` rule can help:
       csv_values: Cash Withdrawal
 ```
 
-With the above rule configuration, we are pointing the rule to the index `2` (remmeber index count starts at `0`) and if the value of the index matches `Cash Withdrawal`,
+With the above rule configuration, we are pointing the rule to the index `2` (remember index count starts at `0`) and if the value of the index matches `Cash Withdrawal`,
 then the origin and destination accounts are set on the Beancount transaction. This rule supports multiple `csv_values`, separated by `;`. If any of the values matches, the rule is applied:
 
-The csv values are **case-insensitive**.
+The CSV values are **case-insensitive**.
 
 ```
 - name: Set_Accounts
