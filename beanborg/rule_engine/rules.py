@@ -64,8 +64,7 @@ class Set_Accounts(Rule):
                     The string evaluation is case insensitive.
 
     Example:
-        -
-           name: Set_Accounts
+        -  name: Set_Accounts
            from: Assets:Bank1:Bob:Savings
            to: Account:Groceries
            csv_index: 4
@@ -222,6 +221,15 @@ class Ignore_By_Payee(Rule):
         return (False, tx)
 
 class Ignore_By_StringAtPos(Rule):
+    """
+    Ignores a transaction based on the value of the specified index
+
+    Example:
+        -  name: Ignore_By_StringAtPos
+           ignore_string_at_pos:
+               - val;3
+    """
+    
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
 

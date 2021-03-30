@@ -35,6 +35,10 @@ Other features:
 - high degree of configurability
 - smart archiving function: when archiving a CSV file, the file is renamed using the start and end date of the CSV file
 
+## Tutorial
+
+A simple tutorial is available here: https://github.com/luciano-fiandesio/beanborg/blob/master/tutorial/README.md
+
 ## Installation
 
 Currently, it is not possible to install beanborg using `pip`. This feature will be added soon. Stay tuned!
@@ -103,26 +107,30 @@ The `indexes` section of the configuration file allows to map each CSV "column" 
 
 Note that the first index starts from `0`.
 
-| Property     | Description                                                                                                                                                                                      | Default |
-|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| date         | The index corresponding to the date of the transaction                                                                                                                                           | 0       |
-| counterparty | The index corresponding to the name of the counterparty of the transaction                                                                                                                       | 3       |
-| amount       | The index corresponding to the amount of the transaction (either debit or credit)                                                                                                                | 4       |
-| account      | The index corresponding to the account of the transaction (e.g. the IBAN or ABA code)                                                                                      | 1       |
-| currency     | The index corresponding to the currency of the transaction                                                                                                                                       | 5       |
-| tx_type      | The index corresponding to the transaction type                                                                                                                                                  | 2       |
-| amount_in    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the index corresponding to the credited amount |         |
+| Property     | Description                                                                             | Default |    
+|--------------|-----------------------------------------------------------------------------------------|---------|
+| date         | The index corresponding to the date of the transaction                                  |    0    |
+| counterparty | The index corresponding to the name of the counterparty of the transaction              |    3    |
+| amount       | The index corresponding to the amount of the transaction (debit or credit)              |    4    |
+| account      | The index corresponding to the account of the transaction (e.g. the IBAN or ABA code)   |    4    |
+| currency     | The index corresponding to the currency of the transaction                              |    5    |
+| tx_type      | The index corresponding to the transaction type                                         |    2    |
+| amount_in    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the index corresponding to the credited amount                                                                                          |         |
 
 
 #### rules
 
-
-
-Each Beancount asset (bank account, credit card, etc.) to which you want to import data into must be declared in the main Beancount ledger.
-
-```
-2019-01-01 open Assets:Bob:Savings      EUR
-```
+| Property        | Description                                                                                                                | Default            |
+|-----------------|----------------------------------------------------------------------------------------------------------------------------|--------------------|
+| beancount_file  | The master beancount ledger file. This property is mandatory and it is required to by the duplication detection mechanism. | `main.ldg`         |
+| rules_folder    | The folder name in which custom rules and look-up tables files are stored                                                  | `rules`            |
+| account         | This property is normally used when a CSV file doesn't contain any account property (IBAN, ABA, account number, etc).      |                    |
+| currency        | Force a default currency                                                                                                   |                    |
+| default_expense | Default expense account                                                                                                    | `Expenses:Unknown` |
+| force_negative  | TODO                                                                                                                       | False              |
+| invert_negative | TODO                                                                                                                       | False              |
+| origin_account  | Specifies the origin account of each transaction                                                                           |                    |
+| ruleset         | List of rules to apply to the CSV file. See `rules` section.                                                               |                    |
 
 #### Sample configuration file
 
@@ -145,6 +153,9 @@ rules:
   rules_file: well-fargo.rules
   account: 565444499
   currency: USD
+  ruleset:
+    - Replace_Asset
+    - Replace_Expense
 ```
 
 ### Rules
@@ -237,10 +248,62 @@ rules:
 
 #### Set_Accounts
 
+This rule does set the origin and destination account for a given transaction, based on one ore more values of a given CSV index.
+
+As an example, let's take this CSV transaction - an ATM withdrawal from a bank.
+
+```
+01.12.2020;01.11.2020;Cash Withdrawal;Bank Of Holland;-100;EUR;0000001;UK0000001444555
+```
+
+When such a transaction is imported, we would like to set the origin account to `Assets:Jim:Current` and the destination account to `Assets:Jim:Cash`.
+
+This is how the `Set_Accounts` rule can help:
+
+```
+- name: Set_Accounts
+      from: Assets:Jim:Current
+      to: Assets:Jim:Cash
+      csv_index: 2
+      csv_values: Cash Withdrawal
+```
+
+With the above rule configuration, we are pointing the rule to the index `2` (remmeber index count starts at `0`) and if the value of the index matches `Cash Withdrawal`,
+then the origin and destination accounts are set on the Beancount transaction. This rule supports multiple `csv_values`, separated by `;`. If any of the values matches, the rule is applied:
+
+The csv values are **case-insensitive**.
+
+```
+- name: Set_Accounts
+      from: Assets:Jim:Current
+      to: Assets:Jim:Cash
+      csv_index: 2
+      csv_values: Cash Withdrawal;Retiro de efectivo;Ritiro contanti
+```
+
 #### Ignore_By_Payee
+
+This rule can be used to ignore a transaction based on the value of the `counterparty` index.
+
+```
+- name: Ignore_By_Payee
+      ignore_payee:
+        - Mc Donald
+        - Best Shoes
+```
+The counterparty names are **case-insensitive**.
 
 #### Ignore_By_StringAtPos
 
+This rule can be used to ignore a transaction based on the value of a specific CVS index.
+
+```
+- name: Ignore_By_StringAtPos
+      ignore_string_at_pos: 
+        - abc0102;4
+```
+
+The values are **case-insensitive**.
 
 ### Custom rules
 
@@ -261,7 +324,7 @@ Arguments:
 Examples:
 
 ```
-./bb_mover.py -f ~/config/wells-fargo.yaml
+bb_mover.py -f ~/config/wells-fargo.yaml
 ```
 
 ### Stage 2: import the bank file into Beancount ledger
@@ -272,8 +335,26 @@ Script to use: `bb_import.py`
 
 Arguments:
 
-### General options
+`-f`: configuration file
+
+Examples:
+
+```
+bb_import.py -f ~/config/wells-fargo.yaml
+```
+
+### Stage 3: archive the CSV file
+
+Move the downloaded CSV file into an `archive` folder.
+
+Script to use: `bb_archive.py`
+
+Arguments:
 
 `-f`: configuration file
 
-`-v`: debug mode
+Examples:
+
+```
+bb_archive.py -f ~/config/wells-fargo.yaml
+```
