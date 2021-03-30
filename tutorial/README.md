@@ -21,14 +21,14 @@ git clone https://github.com/luciano-fiandesio/beanborg
 cd beanborg/tutorial
 ```
 
-It is also probably a good idea to take a quick look at the project's [README](https://github.com/luciano-fiandesio/beanborg/blob/master/README.md), to get an idea of the Beanborg workflow and understand the various configuration options.
+It is probably a good idea to take a quick look at the project's [README](https://github.com/luciano-fiandesio/beanborg/blob/master/README.md), to get an idea of the Beanborg workflow and understand the various configuration options.
 
-The goal of this tutorial is to be able to import the transactions from the [sample CSV](https://github.com/luciano-fiandesio/beanborg/blob/master/README.md) file into the ledger-managed `UK0000001444555.ldg` file.
+The goal of this tutorial is to be able to import the transactions from the [sample CSV](https://github.com/luciano-fiandesio/beanborg/blob/master/tutorial/test-data/eagle-bank-statement.csv) file into the ledger-managed `UK0000001444555.ldg` file.
 
 ## Creating a configuration file for Eagle bank
 
 Beanborg requires a configuration file for each type of CSV file that we wish to import. 
-Normally, each CSV file is bound to a financial institution, so it's good practice to name our config file after the bank. In this case, `eagle.yaml`. I prefer to keep configuration files in a dedicated folder.
+Normally, each CSV file is bound to a financial institution, so it's good practice to name our config file after the bank. In this case, `eagle.yaml`.
 
 Let's create a new folder where we will store the import configuraton.
 
@@ -75,7 +75,7 @@ During a normal import operation, the CSV file is downloaded from the bank app -
 Let's look at this initial configuration.
 The `name` property is required to find the CSV file in the path specified by the `download_path` property. It is enough to specify the first letters of the CSV file, without the `csv` extension.
 
-The `bank_ref` property is very important, because it is used by Beanborg to rename the CSV file and move it to the staging area. If one has multiple bank accounts to import, it is important that the value of `bank_ref` is unique.
+The `bank_ref` property is very important, because it is used by Beanborg to rename the CSV file and move it to the staging area. If one has multiple bank accounts to import, it is crucial that the value of `bank_ref` is unique.
 
 The `date_format`, `separator` and `currency_sep` should be self-explanatory.
 
@@ -83,7 +83,15 @@ We don't need to specify the `skip` property, since the default value is `1`.
 
 Let's try to import the CVS file into the working area, using `bb_mover.py`.
 
-// TODO screencast
+```
+bb_mover.csv -f config/eagle.yaml
+```
+
+If the file is found, the script should return:
+
+```
+Done :)
+```
 
 ## Add the mapping information and rules to the configuration file
 
@@ -108,7 +116,7 @@ This image should hopefully makes the concept more clear:
 
 Beanborg is now able to map the most relevant information of the CSV file with the Beancount structure and create a valid transaction.
 
-The last section of the configuration relates to rules. 
+The last section of the configuration relates to **rules**. 
 
 Rules can be considered as a list of "actions" that are executed one after the other and are applied to each row of the CSV file we want to import.
 
@@ -160,30 +168,30 @@ Run `bb_import.csv -f config/eagle.yaml` again and, this time, the import should
 ```
 summary:
 
-csv tx count: 		    4
-imported: 		        4
-tx already present: 	0
-ignored by rule 	    0
-error: 			          0
+csv tx count:         4
+imported:             4
+tx already present:   0
+ignored by rule:      0
+error:                0
 ```
 
 Each row in the CSV file is matched against the `account.rules` file, and if the `counterparty` index matches the first part of the expression (e.g. `Fresh Food`), the second leg of the transaction is replaced with the propert Expenses category, in this case `Expenses:Groceries`.
 
-The `UK0000001444555.ldg` should now contains the four transactions from the CVS file and both "sides" of the transaction should be correctly set - except for one transaction: the cash withdrawal from bank of Mars. We will see how to correctly categorize this transaction as well.
+The `UK0000001444555.ldg` should now contain the 4 transactions from the CVS file and both "sides" of the transaction should be correctly set - except for one transaction: the cash withdrawal from bank of Mars. We will see how to correctly categorize this transaction as well.
 
 Running the same script again `bb_import.csv -f config/eagle.yaml` will trigger the automatic duplication detection mechanism:
 
 ```
 summary:
 
-csv tx count: 	  	  4
-imported: 		        0
-tx already present: 	4
-ignored by rule 	    0
-error: 			          0
+csv tx count:         4
+imported:             0
+tx already present:   4
+ignored by rule:      0
+error:                0
 ```
 
-Note `tx already present` is set to `4` and `imported` is set to `0`.
+Note that the value of `tx already present` is `4` and `imported` is set to `0`.
 
 At this time, Beanborg does not support executing the rules without importing the data. In order to show how to import the cash withdrawal entry from our sample bank file, we need to delete and recreate the sample ledger file:
 
@@ -217,6 +225,30 @@ Since the CSV entry clearly specifies `Cash Withdrawal` as transaction type, we 
 ```
 
 Let's re-run the import script `bb_import.csv -f config/eagle.yaml`: this time all four transactions should be properly categorized.
+The `Set_Accounts` rules uses the `csv_index` to determine which index of the csv to analyze (remember, the indexes count starts from `0`) and the `csv_values` determines the string that should match the value of the index. If a match is found, both `from` and `to` accounts are set on the transaction.
+
+## Archive the CSV bank file
+
+Once the CSV file is imported, we need to archive the CSV file. Note that this step is mandatory. If one do not need to archive the CSV file, it is important to clean the "staging" folder of the working file: `rm tmp/*.*`, assuming the default value of the `csv.target` property is used.
+
+The archiving script simply moves the CSV file from the stage directory (`tmp`) to an `archive` directory. Additionally, it renames the CSV file by appending to the name the first and last date of the transaction.
+Let's take as an example the CSV file from Eagle bank. When the file is imported into the staging area, it gets renamed to `eag.csv`.
+The archive script analyzes the CSV file and extracts the first and last transaction, so that the file is renamed to `eag_2020-11-01_2020-11-04` and moved to the `archive` folder.
+Let's try:
+
+```
+bb_archive.py -f config/eagle.yaml
+```
+
+The output should look like:
+
+```
+✓ detecting start and end date of transaction file...
+✓ moving file to archive...
+✓ removing temp folder
+```
+
+Note that the `bb_archive.py` has also removed the stage folder `tmp`.
 
 
 

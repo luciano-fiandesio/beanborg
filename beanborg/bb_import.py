@@ -244,7 +244,7 @@ def main():
     print("csv tx count: \t\t" + str(tx_in_file))
     print("imported: \t\t" + str(processed))
     print("tx already present: \t" + str(hash_collision))
-    print("ignored by rule \t" + str(ignored_by_rule))
+    print("ignored by rule: \t" + str(ignored_by_rule))
     print("error: \t\t\t" + str(error))
 
 

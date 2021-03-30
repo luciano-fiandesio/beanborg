@@ -149,7 +149,7 @@ rules:
 
 ### Rules
 
-The beanborg's rules engine comes with a number of preexisting rules. Rules are always referenced by name and can be used to assign an account to a transaction, ignore a transaction or replace the name of a transaction's conterparty.
+The beanborg's rules engine comes with a number of preexisting rules. Rules are always referenced by **name** and can be used to assign an account to a transaction, ignore a transaction or replace the name of a transaction's conterparty.
 Some rules require a look-up table file in order to find the right value and execute the rule action.
 
 A look-up table file is also a CSV file, composed of 3 columns: `value`, `expression`, `result`.
@@ -157,6 +157,8 @@ A look-up table file is also a CSV file, composed of 3 columns: `value`, `expres
 - The `value` represents the string that the rule has to search for.
 - The `expression` represents the matching criteria: `equals`, `startsWith`, `endsWith`, `contains`
 - The `result` represents the rule's output
+
+The next section lists the rules which are available in Beanborg.
 
 #### Replace_Payee
 
@@ -192,8 +194,57 @@ Fresh Food Inc.;equals;Expenses:Groceries
 
 #### Replace_Asset
 
+Assigns an "origin" account to a transaction, based on value of the `account` index of a CSV file row.
+This rule is useful to assign the correct source account of a CSV transaction. This rule is **implicitely added** to the ruleset, even if it doesn't get declared
+    
+The rule can resolve the origin account in two ways: 
+
+- using a look-up file named `asset.rules` located in the directory defined by the `rules.rules_folder` option of the config file
+- using the value of the property `rules.origin_account` of the config file in use
+
+As an example, let's take this CSV transaction. We want to import the transaction so that the origin account is set to `Assets:Jim:Current`.
+ 
+```
+04.11.2020;04.11.2020;Direct Debit;"Fresh Food Inc.";-21,30;EUR;0000001;UK0000001444555
+```
+
+Add the `Replace_Asset` to the `ruleset` and create an `asset.rules` file. Add the following snippet to the `asset.rules` file:
+
+```
+value;expression;result
+UK0000001444555;equals;Assets:Jim:Current
+```
+
+The rule will match the value of the `account` CSV index (`UK0000001444555`) to `Assets:Jim:Current` and create the Beancount transaction. If no match is found, the rule will default to `Assets:Unknown`.
+
+In a scenario where a CSV file does not contain any `account` index, it is possible to specify the account value by setting the `account` property in the config file in use.
+
+```
+--- !Config
+...
+rules:
+  account: UK0000001444555
+```
+
+Note that in the majority of situations, it is more intuitive to set the `origin_account` property on the `rules` block and skip this rule completely.
+
+```
+--- !Config
+...
+rules:
+  origin_account: Assets:Jim:Current
+```
+
+#### Set_Accounts
+
+#### Ignore_By_Payee
+
+#### Ignore_By_StringAtPos
+
 
 ### Custom rules
+
+TODO
 
 ### Stage 1: move bank CSV file
 

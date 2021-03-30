@@ -18,13 +18,14 @@ def main():
     args = eval_args('Archives imported CVS file')
     config = init_config(args.file, args.debug)
     
-    target_csv = config.csv.target + '/' + config.csv.ref + ".csv"
+    target_csv = os.path.join(config.csv.target, config.csv.ref + ".csv")
 
     if not os.path.isfile(target_csv):
-        sys.exit("file: " + target_csv + " does not exist!")
+        print("file: " + target_csv + " does not exist!")
+        sys.exit(-1)
 
     if not os.path.isdir(config.csv.archive):
-        os.mkdir(config.csv.archive_path)
+        os.mkdir(config.csv.archive)
 
     dates = []
     print(u"\u2713" + " detecting start and end date of transaction file...")

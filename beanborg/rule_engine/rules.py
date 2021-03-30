@@ -49,7 +49,6 @@ class Rule:
                 + ruleDef.rule.__name__
             )
 
-
 class Set_Accounts(Rule):
     """
     Assign a from/to asset or account to a transaction, depending on the value of a
@@ -114,7 +113,6 @@ class Set_Accounts(Rule):
 
         return (False, tx)
 
-
 class Replace_Payee(Rule):
     """
     Replaces the name of the transaction counterparty (for instance: McDonald -> Mc Donald Restaurant)
@@ -142,10 +140,9 @@ class Replace_Payee(Rule):
             ),
         )
 
-
 class Replace_Asset(Rule):
     """
-    Assigns an account to a transaction, based on value of the 'account_pos' index of a CSV file row.
+    Assigns an account to a transaction, based on value of the 'account' index of a CSV file row.
     This rule is useful to assign the correct source account of a CSV transaction.
     
     The rule is based on the 'asset.rules' look-up file.
@@ -182,7 +179,6 @@ class Replace_Asset(Rule):
 
         return (False, tx)
 
-
 class Replace_Expense(Rule):
     """
     Categorizes a transaction by assigning the account extracted from a look-up table
@@ -212,7 +208,6 @@ class Replace_Expense(Rule):
 
         return (False, tx)
 
-
 class Ignore_By_Payee(Rule):
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
@@ -225,7 +220,6 @@ class Ignore_By_Payee(Rule):
                 return (True, None)
 
         return (False, tx)
-
 
 class Ignore_By_StringAtPos(Rule):
     def __init__(self, name, context):
