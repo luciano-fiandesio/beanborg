@@ -1,10 +1,28 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import os
+import sys
 from .Context import Context
 from beancount.core.data import Transaction, Posting, Amount, Close, Open
 from .decision_tables import *
 
+class LookUpCache:
+    """
+    Simple cache for lookup tables
+    """
+
+    cache = dict()
+
+    @staticmethod
+    def init_decision_table(key, path):
+
+        if key in LookUpCache.cache:
+            return LookUpCache.cache[key]
+
+        data = init_decision_table(path)
+        LookUpCache.cache[key] = data
+        return data   
 
 class Rule:
     __metaclass__ = abc.ABCMeta
@@ -108,12 +126,16 @@ class Replace_Payee(Rule):
         Rule.__init__(self, name, context)
 
     def execute(self, csv_line, tx, ruleDef=None):
-
+        table = os.path.join(self.context.rules_dir, 'payee.rules')
+        if not os.path.isfile(table):
+            print("file: %s does not exist! - The 'Replace_Payee' rules requires the payee.rules file." % (table))
+            sys.exit(-1)
+        
         return (
             False,
             tx._replace(
                 payee=resolve_from_decision_table(
-                    self.context.payees,
+                    LookUpCache.init_decision_table("payee", table),
                     csv_line[self.context.payee_pos],
                     csv_line[self.context.payee_pos],
                 )
@@ -127,19 +149,32 @@ class Replace_Asset(Rule):
     This rule is useful to assign the correct source account of a CSV transaction.
     
     The rule is based on the 'asset.rules' look-up file.
+    If no 'asset.rules' file is found, the account will be resolved to "Assets:Unknown" or
+    to the value of the property `rules.origin_account` of the config file.
     """
     
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
 
     def execute(self, csv_line, tx=None, ruleDef=None):
-        asset = resolve_from_decision_table(
-            self.context.assets,
-            self.context.account
-            if self.context.account is not None
-            else csv_line[self.context.account_pos],
-            "Assets:Unknown",
-        )
+
+        asset = None
+        table = os.path.join(self.context.rules_dir, 'asset.rules')
+        if self.context.force_account:
+            asset = self.context.force_account
+        else:
+            if not os.path.isfile(table):
+                print("file: %s does not exist! - The 'Replace_Asset' rules requires the asset.rules file." % (table))
+                sys.exit(-1)
+            
+            asset = resolve_from_decision_table(
+                LookUpCache.init_decision_table("asset", table),
+                self.context.account
+                if self.context.account is not None
+                else csv_line[self.context.account_pos],
+                "Assets:Unknown"
+            )
+        
         if asset:
             posting = Posting(asset, None, None, None, None, None)
             new_postings = [posting] + [tx.postings[1]]
@@ -159,8 +194,14 @@ class Replace_Expense(Rule):
         Rule.__init__(self, name, context)
 
     def execute(self, csv_line, tx=None, ruleDef=None):
+        table = os.path.join(self.context.rules_dir, 'account.rules')
+        
+        if not os.path.isfile(table):
+                print("file: %s does not exist! - The 'Replace_Expense' rules requires the account.rules file." % (table))
+                sys.exit(-1)
+            
         expense = resolve_from_decision_table(
-            self.context.accounts,
+            LookUpCache.init_decision_table("account", table),
             csv_line[self.context.payee_pos],
             self.context.default_expense,
         )

@@ -95,7 +95,6 @@ class RuleEngine:
                 xignorepos = yrule.get("ignore_string_at_pos")
 
                 if rule_name in custom_rules:
-                    # print('custom-rule')
                     self.rules[rule_name] = RuleDef(
                         custom_rules[rule_name],
                         xfrom,
@@ -115,6 +114,19 @@ class RuleEngine:
                         xstring,
                         xignorepos,
                     )
+        # assign default rules, if they are not already specified
+        if ctx.rules_dir: # do not auto-add if there is no rules folder!
+            if 'Replace_Asset' not in self.rules:
+                self.rules['Replace_Asset'] = RuleDef(
+                            globals()['Replace_Asset'],
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+
 
     def load_custom_rules(self):
 
@@ -139,7 +151,8 @@ class RuleEngine:
 
         for key in self.rules:
             if not final:
-                print("Executing rule: " + str(self.rules[key].rule))
+                if self._ctx.debug:
+                    print("Executing rule: " + str(self.rules[key].rule))
                 rulez = self.rules[key].rule(key, self._ctx)
                 final, tx = rulez.execute(csv_line, tx, self.rules[key])
 

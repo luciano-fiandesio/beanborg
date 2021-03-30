@@ -5,7 +5,7 @@ import sys
 
 class Rules(object):
 
-    def __init__(self, bc_file=None, rules_folder=None, account=None, currency=None, default_expense=None, force_negative=None, invert_negative=None, ruleset=[]):
+    def __init__(self, bc_file=None, rules_folder=None, account=None, currency=None, default_expense=None, force_negative=None, invert_negative=None, origin_account=None, ruleset=[]):
         self.bc_file = bc_file
         self.rules_folder = rules_folder
         self.account = account
@@ -13,6 +13,7 @@ class Rules(object):
         self.default_expense = default_expense
         self.force_negative = force_negative
         self.invert_negative = invert_negative
+        self.origin_account = origin_account
         self.ruleset = ruleset
 
 class Indexes(object):
@@ -87,6 +88,7 @@ class Config(object):
             rls.get('default_expense', 'Expenses:Unknown'),
             rls.get('force_negative', False),
             rls.get('invert_negative', False),
+            rls.get('origin_account', None),
             rls.get('ruleset', [])
         )
 
