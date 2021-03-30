@@ -37,7 +37,7 @@ Other features:
 
 ## Tutorial
 
-A simple tutorial is available here: https://github.com/luciano-fiandesio/beanborg/blob/master/tutorial/README.md
+A simple tutorial is available [here](https://github.com/luciano-fiandesio/beanborg/blob/master/tutorial/README.md)
 
 ## Installation
 
