@@ -73,7 +73,7 @@ The first stage is executed by the `bb_mover.py` script.
 
 The second stage is executed by the `bb_import.py` script.
 
-The third stage is executed by the `bb_clean.py` script.
+The third stage is executed by the `bb_archive.py` script.
 
 ### Configuration
 
