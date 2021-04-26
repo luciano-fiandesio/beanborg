@@ -5,23 +5,23 @@ __copyright__ = "Copyright (C) 2021  Luciano Fiandesio"
 __license__ = "GNU GPLv2"
 
 import csv
-from datetime import datetime, timedelta
 import hashlib
 import os
 import os.path
-import sys
 import random
+import sys
 import traceback
-from config import *
-from arg_parser import *
-from beancount.parser.printer import format_entry
-from beancount.core.data import Transaction, Amount, Posting
-from beancount.core.number import D
-import beancount.loader as loader
+from datetime import datetime, timedelta
 
-from rule_engine.rules_engine import RuleEngine
-from rule_engine.Context import Context
-from rule_engine.decision_tables import init_decision_table
+import beancount.loader as loader
+from beancount.core.data import Transaction, Amount
+from beancount.core.number import D
+from beancount.parser.printer import format_entry
+
+from beanborg.arg_parser import eval_args
+from beanborg.config import init_config
+from beanborg.rule_engine.Context import Context
+from beanborg.rule_engine.rules_engine import RuleEngine
 
 
 def gen_datetime(min_year=1900, max_year=datetime.now().year):
