@@ -4,13 +4,13 @@
 __copyright__ = "Copyright (C) 2021  Luciano Fiandesio"
 __license__ = "GNU GPLv2"
 
-import argparse
+import glob
 import os
 import sys
-import glob
-import yaml
-from config import *
-from arg_parser import *
+
+from beanborg.arg_parser import eval_args
+from beanborg.config import init_config
+
 
 def main():
     
