@@ -41,22 +41,8 @@ A simple tutorial is available [here](https://github.com/luciano-fiandesio/beanb
 
 ## Installation
 
-Currently, it is not possible to install Beanborg using `pip`. This feature will be added soon. Stay tuned!
-
-### Installation steps
-
-Clone this repository and add the `beanborg` folder to your shell's path.
-
 ```
-git clone https://github.com/luciano-fiandesio/beanborg
-
-# Bash: add the following to your ~/.profile or ~/.bash_profile
-
-PATH=$PATH:~/../beanborg/beaborg
-
-# Fish: add the following to your config.fish file 
-
-fish_add_path ~/../beanborg/beanborg
+pip install git+https://github.com/luciano-fiandesio/beanborg.git
 ```
 
 ## Workflow
