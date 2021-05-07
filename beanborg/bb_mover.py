@@ -39,7 +39,7 @@ def main():
 
     for f in os.listdir(config.csv.download_path):
         if f.startswith(config.csv.name):
-            moved_csv = os.path.join(config.csv.target, config.csv.ref + ".csv")  #config.csv.target + "/" + config.csv.ref + ".csv"
+            moved_csv = os.path.join(config.csv.target, config.csv.ref + ".csv")
             os.rename(config.csv.download_path + "/" + f, moved_csv)
             if(config.csv.post_script_path):
                 try:
