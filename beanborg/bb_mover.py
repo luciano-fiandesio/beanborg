@@ -36,12 +36,15 @@ def main():
         print("No file found in %s with name starting with: %s"%(config.csv.download_path, config.csv.name))
         sys.exit(-1)
 
-
+    if config.csv.post_script_path and not os.path.isfile(config.csv.post_script_path):
+        print("No post-move script found: %s"%(config.csv.post_script_path))
+        sys.exit(-1)    
+        
     for f in os.listdir(config.csv.download_path):
         if f.startswith(config.csv.name):
             moved_csv = os.path.join(config.csv.target, config.csv.ref + ".csv")
             os.rename(config.csv.download_path + "/" + f, moved_csv)
-            if(config.csv.post_script_path):
+            if config.csv.post_script_path:
                 try:
                     check_call([config.csv.post_script_path, os.path.join(current_dir, moved_csv)])
                 except CalledProcessError as e:
