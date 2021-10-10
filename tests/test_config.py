@@ -14,7 +14,6 @@ def test_config1():
     assert config.csv.archive == 'archive2'
     assert config.csv.separator == '|'
     assert config.csv.date_format == '%d/%m/%Y'
-    assert config.csv.currency_sep == ','
     assert config.csv.skip == 3
 
     assert config.indexes.date == 8
