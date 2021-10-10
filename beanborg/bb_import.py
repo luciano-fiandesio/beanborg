@@ -115,7 +115,7 @@ def resolve_amount(row, args):
     val = row[args.indexes.amount].strip()
 
     if args.indexes.amount_in:
-        return D(row[args.indexes.amount_in].strip().replace(args.csv.currency_sep, ".")) -D(val.replace(args.csv.currency_sep, "."))
+        return convert(row[args.indexes.amount_in].strip()) -convert(val)
 
     if args.rules.invert_negative:
         if val[0] == "-":
