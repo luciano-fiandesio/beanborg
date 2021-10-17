@@ -84,7 +84,7 @@ We don't need to specify the `skip` property, since the default value is `1`.
 Let's try to import the CVS file into the working area, using `bb_mover.py`.
 
 ```
-bb_mover.csv -f config/eagle.yaml
+bb_mover.py -f config/eagle.yaml
 ```
 
 If the file is found, the script should return:
@@ -136,7 +136,7 @@ rules:
 It's now time to run the second Beanborg script, `bb_import.csv`, which imports the transaction into the ledger.
 
 ```
-bb_import.csv -f config/eagle.yaml
+bb_import.py -f config/eagle.yaml
 ```
 
 The script should exit immediately with the following error:
