@@ -133,7 +133,7 @@ rules:
     - name: Replace_Expense
 ```
 
-It's now time to run the second Beanborg script, `bb_import.csv`, which imports the transaction into the ledger.
+It's now time to run the second Beanborg script, `bb_import`, which imports the transaction into the ledger.
 
 ```
 bb_import.py -f config/eagle.yaml
@@ -163,7 +163,7 @@ Best Company;contains;Expenses:Clothing
 Doctor Bill;eq;Expenses:Medical
 ```
 
-Run `bb_import.csv -f config/eagle.yaml` again and, this time, the import should be successful.
+Run `bb_import -f config/eagle.yaml` again and, this time, the import should be successful.
 
 ```
 summary:
@@ -179,7 +179,7 @@ Each row in the CSV file is matched against the `account.rules` file, and if the
 
 The `UK0000001444555.ldg` should now contain the 4 transactions from the CVS file and both "sides" of the transaction should be correctly set - except for one transaction: the cash withdrawal from bank of Mars. We will see how to correctly categorize this transaction as well.
 
-Running the same script again `bb_import.csv -f config/eagle.yaml` will trigger the automatic duplication detection mechanism:
+Running the same script again `bb_import -f config/eagle.yaml` will trigger the automatic duplication detection mechanism:
 
 ```
 summary:
@@ -224,7 +224,7 @@ Since the CSV entry clearly specifies `Cash Withdrawal` as transaction type, we 
       csv_values: Cash Withdrawal
 ```
 
-Let's re-run the import script `bb_import.csv -f config/eagle.yaml`: this time all four transactions should be properly categorized.
+Let's re-run the import script `bb_import -f config/eagle.yaml`: this time all four transactions should be properly categorized.
 The `Set_Accounts` rules uses the `csv_index` to determine which index of the csv to analyze (remember, the indexes count starts from `0`) and the `csv_values` determines the string that should match the value of the index. If a match is found, both `from` and `to` accounts are set on the transaction.
 
 ## Archive the CSV bank file
