@@ -134,6 +134,7 @@ rules:
 ```
 
 Before importing the CSV data, we need one last step: a configuration file (named `assets`)  that helps Beanborg associate the bank account asset definition (`Assets:Bank1:Bob:Current`, which is the bank account defined in Beanborg used in this tutorial) to the bank account identifier in the CSV file (in this tutorial, the IBAN number).
+Note that this file is required by the `Replace_Asset` rule, which is automatically executed, even if it's not specified in the rules list.
 
 In Beanborg, all configuration files are placed into the `rules` folder - note that the folder name can be changed using the `rules_folder` property of the `rules` configuration.
 
