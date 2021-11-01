@@ -23,6 +23,9 @@ from beanborg.config import init_config
 from beanborg.rule_engine.Context import Context
 from beanborg.rule_engine.rules_engine import RuleEngine
 
+# create mapping tables for currency conversion
+sign_trans = str.maketrans({'$': '', ' ':''}) # remove $ and space
+dot_trans = str.maketrans({'.': '', ',': ''}) # remove . and ,
 
 def gen_datetime(min_year=1900, max_year=datetime.now().year):
     """ generate a datetime in format yyyy-mm-dd hh:mm:ss.000000 """
@@ -112,7 +115,7 @@ def resolve_amount(row, args):
     val = row[args.indexes.amount].strip()
 
     if args.indexes.amount_in:
-        return D(row[args.indexes.amount_in].strip().replace(args.csv.currency_sep, ".")) -D(val.replace(args.csv.currency_sep, "."))
+        return convert(row[args.indexes.amount_in].strip()) -convert(val)
 
     if args.rules.invert_negative:
         if val[0] == "-":
@@ -121,7 +124,29 @@ def resolve_amount(row, args):
     if args.rules.force_negative == 1:
         if val[0].isdigit():
             val = "-" + val
-    return D(val.replace(args.csv.currency_sep, "."))
+
+    return convert(val)
+
+
+def convert(num, sign_trans=sign_trans, dot_trans=dot_trans):
+    """
+    Converts the given string into a decimal, where the last two digits are always
+    assumed to be the decimals:
+
+    "22 000,76"      -> 22000.76
+    "22.000,76"      -> 22000.76
+    "22,000.76"      -> 22000.76
+    "1022000,76"     -> 1022000.76 
+    "-1,022,000.76", -> -1022000.76
+    "1022000",       -> 1022000.0
+    "22 000,76$",    -> 22000.76
+    "$22 000,76"     -> 22000.76
+
+    """
+
+    num = num.translate(sign_trans)
+    num = num[:-3].translate(dot_trans) + num[-3:]
+    return D(num.replace(',', '.'))
 
 
 def main():

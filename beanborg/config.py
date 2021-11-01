@@ -30,12 +30,11 @@ class Indexes(object):
 
 class Csv(object):
 
-    def __init__(self, download_path, name, ref, separator=None, currency_sep=None, date_format=None, skip=None, target=None, archive=None, post_script_path=None):
+    def __init__(self, download_path, name, ref, separator=None, date_format=None, skip=None, target=None, archive=None, post_script_path=None):
         self.download_path = download_path
         self.name = name
         self.ref = ref
         self.separator = separator
-        self.currency_sep = currency_sep
         self.date_format = date_format
         self.skip = skip
         self.target = target
@@ -60,7 +59,6 @@ class Config(object):
             csv_data['name'],
             csv_data['bank_ref'],
             csv_data.get('separator', ','),
-            csv_data.get('currency_sep', '.'),
             csv_data['date_format'],
             csv_data.get('skip', 1),
             csv_data.get('target', 'tmp'),
