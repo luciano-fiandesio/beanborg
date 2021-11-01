@@ -1,0 +1,16 @@
+--- !Config
+csv:
+  download_path: "/Users/luciano/Desktop"
+  name: bbk_statement
+  bank_ref: bbk
+  archive_path: archive2
+  date_format: "%d/%m/%Y"
+  
+indexes:
+  date: 8
+  counterparty: 9 
+  amount: 10
+  account: 11
+  currency: 12
+  tx_type: 13
+   
