@@ -133,6 +133,24 @@ rules:
     - name: Replace_Expense
 ```
 
+Before importing the CSV data, we need one last step: a configuration file (named `assets`)  that helps Beanborg associate the bank account asset definition (`Assets:Bank1:Bob:Current`, which is the bank account defined in Beanborg used in this tutorial) to the bank account identifier in the CSV file (in this tutorial, the IBAN number).
+
+In Beanborg, all configuration files are placed into the `rules` folder - note that the folder name can be changed using the `rules_folder` property of the `rules` configuration.
+
+```
+mkdir rules
+cd rules
+touch assets.rules
+```
+
+Copy the following content into `assets.rules`
+
+```
+value;expression;result
+UK0000001444555;equals;Assets:Bank1:Bob:Current
+```
+
+
 It's now time to run the second Beanborg script, `bb_import`, which imports the transaction into the ledger.
 
 ```
@@ -146,15 +164,10 @@ file: rules/account.rules does not exist! - The 'Replace_Expense' rules requires
 ```
 
 The `Replace_Expense` rules requires an additional look-up table file to map counterparty names to Expense categories.
-This file (named `account.rules`) should be located in a folder named `rules` - note that the folder name can be changed using the `rules_folder` property of the `rules` configuration.
+This file (named `account.rules`) should be located in the `rules` folder.
 
-Let's create a `rules` folder:
 
-```
-mkdir rules
-```
-
-Create a `account.rules` file in the newly created folder and paste the following data:
+Create a new `account.rules` file in the `rules` folder and paste the following data:
 
 ```
 value;expression;result
@@ -237,7 +250,7 @@ The archive script analyzes the CSV file and extracts the first and last transac
 Let's try:
 
 ```
-bb_archive.py -f config/eagle.yaml
+bb_archive -f config/eagle.yaml
 ```
 
 The output should look like:
@@ -248,7 +261,7 @@ The output should look like:
 ✓ removing temp folder
 ```
 
-Note that the `bb_archive.py` has also removed the stage folder `tmp`.
+Note that the `bb_archive` has also removed the stage folder `tmp`.
 
 
 
