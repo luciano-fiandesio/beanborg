@@ -148,6 +148,48 @@ def convert(num, sign_trans=sign_trans, dot_trans=dot_trans):
     num = num[:-3].translate(dot_trans) + num[-3:]
     return D(num.replace(',', '.'))
 
+def hashTuple(tuple):
+
+    m = hashlib.md5()
+    for s in tuple:
+        m.update(str(s).encode("utf-8"))
+    return m.hexdigest() 
+
+def toTuple(transaction):
+
+    return (str(transaction.date),
+        transaction.payee,
+        transaction.postings[0].units
+    )
+
+def writeTx(fileHandler, tx):
+    fileHandler.write(format_entry(tx) + "\n")
+
+
+def init_duplication_store(account, journal):
+    """
+    Builds a map of existing transactions for the account being imported.
+    Each map entry has an hash of the value as key and a tuple of transaction date, amount and payee as 
+    value.
+    This map is used to report identical transactions being imported, should the standard hash based approach
+    fail.
+    """
+    transactions = {}
+    entries, _, _ = loader.load_file(journal)
+    for entry in entries:
+        if isinstance(entry, Transaction):
+            if entry.meta['filename'].endswith(account):
+                tup = toTuple(entry)
+                transactions[hashTuple(tup)] = tup
+                
+    return transactions
+
+def print_duplication_warning(tx):
+
+    print("Warning: a transaction with identical information already exists.\ndate: %s\npayee: %s\namount %s" 
+        % (tx[0], tx[1], tx[2]))
+    return query_yes_no("Do you want to import it?")
+
 
 def main():
 
@@ -254,10 +296,24 @@ def main():
         # write transaction to ledger file corresponding to the account id
         if len(accounts) == 1 and transactions:
 
-            with open(accounts.pop() + ".ldg", "a") as exc:
+            # write transaction to ledger file corresponding to the account id
+        if len(accounts) == 1 and transactions:
+
+            accountFile = accounts.pop() + ".ldg" 
+            accountTx = init_duplication_store(accountFile, args.rules.bc_file)
+            
+            with open(accountFile, "a") as exc:
                 for key in sorted(transactions):
-                    exc.write(format_entry(transactions[key]) + "\n")
-                    processed += 1
+                    # check if the transaction being imported matches another existing transaction
+                    # in the current ledger file.
+                    tup = toTuple(transactions[key])
+                    if hashTuple(tup) in accountTx:
+                        if print_duplication_warning(accountTx[hashTuple(tup)]): 
+                            writeTx(exc, transactions[key])
+                            processed += 1
+                    else:
+                        writeTx(exc, transactions[key])
+                        processed += 1
         else:
             if len(transactions) > 0:
                 print(
