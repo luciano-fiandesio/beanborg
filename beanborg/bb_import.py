@@ -29,6 +29,7 @@ from beanborg.utils.duplicate_detector import (
     print_duplication_warning,
 )
 
+
 def gen_datetime(min_year=1900, max_year=datetime.now().year):
     """generate a datetime in format yyyy-mm-dd hh:mm:ss.000000"""
     start = datetime(min_year, 1, 1, 00, 00, 00)
@@ -225,7 +226,11 @@ def main():
         if len(accounts) == 1 and transactions:
 
             account_file = accounts.pop() + ".ldg"
-            account_tx = init_duplication_store(account_file, args.rules.bc_file)
+            account_tx = (
+                init_duplication_store(account_file, args.rules.bc_file)
+                if args.rules.advanced_duplicate_detection
+                else {}
+            )
 
             with open(account_file, "a") as exc:
                 for key in sorted(transactions):
