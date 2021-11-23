@@ -41,7 +41,7 @@ class AmountHandler:
         "$22 000,76"     -> 22000.76
 
         """
-        print(num)
+        
         num = num.translate(sign_trans)
         num = num[:-3].translate(dot_trans) + num[-3:]
         return D(num.replace(',', '.'))

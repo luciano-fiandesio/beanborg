@@ -17,7 +17,7 @@ import beancount.loader as loader
 from beancount.core.data import Transaction, Amount
 from beancount.core.number import D
 from beancount.parser.printer import format_entry
-
+from beanborg.utils.input import query_yes_no
 from beanborg.arg_parser import eval_args
 from beanborg.config import init_config
 from beanborg.rule_engine.Context import Context
