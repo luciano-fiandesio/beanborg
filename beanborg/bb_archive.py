@@ -16,9 +16,9 @@ from beanborg.config import init_config
 
 def main():
 
-    args = eval_args('Archives imported CVS file')
+    args = eval_args("Archives imported CVS file")
     config = init_config(args.file, args.debug)
-    
+
     target_csv = os.path.join(config.csv.target, config.csv.ref + ".csv")
 
     if not os.path.isfile(target_csv):
@@ -32,13 +32,15 @@ def main():
     print(u"\u2713" + " detecting start and end date of transaction file...")
     with open(target_csv) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=config.csv.separator)
-        for i in range(config.csv.skip):
+        for _ in range(config.csv.skip):
             next(csv_reader)  # skip the line
 
         for row in csv_reader:
             try:
                 dates.append(
-                    datetime.strptime(row[config.indexes.date].strip(), config.csv.date_format)
+                    datetime.strptime(
+                        row[config.indexes.date].strip(), config.csv.date_format
+                    )
                 )
             except Exception as ex:
                 print("error: " + str(ex))

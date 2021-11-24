@@ -13,22 +13,25 @@ import sys
 import traceback
 from datetime import datetime, timedelta
 
-import beancount.loader as loader
-from beancount.core.data import Transaction, Amount
-from beancount.core.number import D
-from beancount.parser.printer import format_entry
+from beancount import loader
 
+from beancount.core.data import Transaction, Amount
+from beancount.parser.printer import format_entry
+from beanborg.handlers.amount_handler import AmountHandler
 from beanborg.arg_parser import eval_args
 from beanborg.config import init_config
 from beanborg.rule_engine.Context import Context
 from beanborg.rule_engine.rules_engine import RuleEngine
+from beanborg.utils.duplicate_detector import (
+    init_duplication_store,
+    hash_tuple,
+    to_tuple,
+    print_duplication_warning,
+)
 
-# create mapping tables for currency conversion
-sign_trans = str.maketrans({'$': '', ' ':''}) # remove $ and space
-dot_trans = str.maketrans({'.': '', ',': ''}) # remove . and ,
 
 def gen_datetime(min_year=1900, max_year=datetime.now().year):
-    """ generate a datetime in format yyyy-mm-dd hh:mm:ss.000000 """
+    """generate a datetime in format yyyy-mm-dd hh:mm:ss.000000"""
     start = datetime(min_year, 1, 1, 00, 00, 00)
     years = max_year - min_year + 1
     end = start + timedelta(days=365 * years)
@@ -40,15 +43,21 @@ def init_rule_engine(args):
     Initialize the import rule engine using the arguments from
     the configuration file
     """
-        
-    folder = args.rules.rules_folder
-        
-    if len(args.rules.ruleset) > 1:
-        
-        if not os.path.isfile(folder + "/asset.rules") and args.rules.account is None and args.rules.origin_account is None:
 
-            print('Please specify an account in your config file '
-                  'or create an entry in the asset.rules file')
+    folder = args.rules.rules_folder
+
+    if len(args.rules.ruleset) > 1:
+
+        if (
+            not os.path.isfile(folder + "/asset.rules")
+            and args.rules.account is None
+            and args.rules.origin_account is None
+        ):
+
+            print(
+                "Please specify an account in your config file "
+                "or create an entry in the asset.rules file"
+            )
             sys.exit(-1)
 
     return RuleEngine(
@@ -63,7 +72,7 @@ def init_rule_engine(args):
             ruleset=args.rules.ruleset,
             rules_dir=folder,
             force_account=args.rules.origin_account,
-            debug=args.debug
+            debug=args.debug,
         )
     )
 
@@ -71,7 +80,7 @@ def init_rule_engine(args):
 def load_journal_hashes(journal):
     """
     Load in-memory all the hashes (md5 property) of the provided ledger.
-    This is required for the duplication detecting algo 
+    This is required for the duplication detecting algo
     """
 
     md5s = []
@@ -85,7 +94,7 @@ def load_journal_hashes(journal):
 
 
 def log_error(row):
-    """ simple error logger """
+    """simple error logger"""
     print("CSV: " + ",".join(row))
     print(
         "------------------------------------------------------------------------------"
@@ -93,7 +102,7 @@ def log_error(row):
 
 
 def get_account(row, args):
-    """ get the account value for the given csv line or use the specified account """
+    """get the account value for the given csv line or use the specified account"""
     if args.rules.account:
         return args.rules.account
 
@@ -101,60 +110,22 @@ def get_account(row, args):
 
 
 def get_currency(row, args):
-    """ get the currency value for the given csv line or use the specified currency """
+    """get the currency value for the given csv line or use the specified currency"""
     if args.rules.currency:
         return args.rules.currency
     return row[args.indexes.currency]
 
 
-def resolve_amount(row, args):
-    """
-    TODO
-    """
-    # Get the amount from the line
-    val = row[args.indexes.amount].strip()
-
-    if args.indexes.amount_in:
-        return convert(row[args.indexes.amount_in].strip()) -convert(val)
-
-    if args.rules.invert_negative:
-        if val[0] == "-":
-            val = val.replace("-", "+")
-
-    if args.rules.force_negative == 1:
-        if val[0].isdigit():
-            val = "-" + val
-
-    return convert(val)
-
-
-def convert(num, sign_trans=sign_trans, dot_trans=dot_trans):
-    """
-    Converts the given string into a decimal, where the last two digits are always
-    assumed to be the decimals:
-
-    "22 000,76"      -> 22000.76
-    "22.000,76"      -> 22000.76
-    "22,000.76"      -> 22000.76
-    "1022000,76"     -> 1022000.76 
-    "-1,022,000.76", -> -1022000.76
-    "1022000",       -> 1022000.0
-    "22 000,76$",    -> 22000.76
-    "$22 000,76"     -> 22000.76
-
-    """
-
-    num = num.translate(sign_trans)
-    num = num[:-3].translate(dot_trans) + num[-3:]
-    return D(num.replace(',', '.'))
+def write_tx(file_handler, tx):
+    file_handler.write(format_entry(tx) + "\n")
 
 
 def main():
 
-    options = eval_args('Parse bank csv file and import into beancount')
+    options = eval_args("Parse bank csv file and import into beancount")
     args = init_config(options.file, options.debug)
-    
-    import_csv = args.csv.target + '/' + args.csv.ref + '.csv' 
+
+    import_csv = args.csv.target + "/" + args.csv.ref + ".csv"
 
     if not os.path.isfile(import_csv):
         print("file: %s does not exist!" % (import_csv))
@@ -169,12 +140,13 @@ def main():
     transactions = {}
     rule_engine = init_rule_engine(args)
     tx_hashes = load_journal_hashes(args.rules.bc_file)
-
+    # init handlers
+    amount_handler = AmountHandler()
     accounts = set()
 
     with open(import_csv) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=args.csv.separator)
-        for i in range(args.csv.skip):
+        for _ in range(args.csv.skip):
             next(csv_reader)  # skip the line
         for row in csv_reader:
             tx_in_file += 1
@@ -197,19 +169,19 @@ def main():
                     tx = rule_engine.execute(row)
 
                     if tx:
-                        """ 
+                        """
                         Handle the origin account: if the tx processed by the
                         rules engin has no origin account, try to assign one
-                        from the property file: args.rules.origin_account 
-                        """ 
+                        from the property file: args.rules.origin_account
+                        """
                         if tx.postings[0].account is None:
                             raise Exception(
-                                'Unable to resolve the origin account for this transaction, '
-                                'please check that the `Replace_Asset` rule '
-                                'is in use for this account or set the `origin_account` property '
-                                'in the config file.'
+                                "Unable to resolve the origin account for this transaction, "
+                                "please check that the `Replace_Asset` rule "
+                                "is in use for this account or set the `origin_account` property "
+                                "in the config file."
                             )
-                    
+
                         # replace date """
                         tx = tx._replace(date=str(tx_date.date()))
 
@@ -217,14 +189,14 @@ def main():
                         tx = tx._replace(meta=tx_meta)
 
                         # get a decimal, with the minus sign, if it's an expense
-                        amount = resolve_amount(row, args)
-
+                        amount = amount_handler.handle(
+                            row[args.indexes.amount].strip(), args
+                        )
                         # add units (how much was spent)
                         new_posting = tx.postings[0]._replace(
                             units=Amount(amount, get_currency(row, args))
                         )
-                        tx = tx._replace(
-                            postings=[new_posting] + [tx.postings[1]])
+                        tx = tx._replace(postings=[new_posting] + [tx.postings[1]])
 
                         if args.debug:
                             print(tx)
@@ -232,8 +204,7 @@ def main():
                         # generate a key based on:
                         # - the tx date
                         # - a random time (tx time is not important, but date is!)
-                        transactions[str(tx_date) +
-                                     str(gen_datetime().time())] = tx
+                        transactions[str(tx_date) + str(gen_datetime().time())] = tx
                     else:
                         ignored_by_rule += 1
                 else:
@@ -254,10 +225,25 @@ def main():
         # write transaction to ledger file corresponding to the account id
         if len(accounts) == 1 and transactions:
 
-            with open(accounts.pop() + ".ldg", "a") as exc:
+            account_file = accounts.pop() + ".ldg"
+            account_tx = (
+                init_duplication_store(account_file, args.rules.bc_file)
+                if args.rules.advanced_duplicate_detection
+                else {}
+            )
+
+            with open(account_file, "a") as exc:
                 for key in sorted(transactions):
-                    exc.write(format_entry(transactions[key]) + "\n")
-                    processed += 1
+                    # check if the transaction being imported matches another existing transaction
+                    # in the current ledger file.
+                    tup = to_tuple(transactions[key])
+                    if hash_tuple(tup) in account_tx:
+                        if print_duplication_warning(account_tx[hash_tuple(tup)]):
+                            write_tx(exc, transactions[key])
+                            processed += 1
+                    else:
+                        write_tx(exc, transactions[key])
+                        processed += 1
         else:
             if len(transactions) > 0:
                 print(
