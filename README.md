@@ -107,17 +107,18 @@ Note that the first index starts from `0`.
 
 #### rules
 
-| Property        | Description                                                                                                                | Default            |
-|-----------------|----------------------------------------------------------------------------------------------------------------------------|--------------------|
-| beancount_file  | The master Beancount ledger file. This property is mandatory and it is required to by the duplication detection mechanism. | `main.ldg`         |
-| rules_folder    | The folder name in which custom rules and look-up tables files are stored                                                  | `rules`            |
-| account         | This property is normally used when a CSV file doesn't contain any account property (IBAN, ABA, account number, etc).      |                    |
-| currency        | Force a default currency                                                                                                   |                    |
-| default_expense | Default expense account                                                                                                    | `Expenses:Unknown` |
-| force_negative  | TODO                                                                                                                       | False              |
-| invert_negative | TODO                                                                                                                       | False              |
-| origin_account  | Specifies the origin account of each transaction                                                                           |                    |
-| ruleset         | List of rules to apply to the CSV file. See `rules` section.                                                               |                    |
+| Property                             | Description                                                                                                                | Default            |
+|-----------------                     |----------------------------------------------------------------------------------------------------------------------------|--------------------|
+| beancount_file                       | The master Beancount ledger file. This property is mandatory and it is required to by the duplication detection mechanism. | `main.ldg`         |
+| rules_folder                         | The folder name in which custom rules and look-up tables files are stored                                                  | `rules`            |
+| account                              | This property is normally used when a CSV file doesn't contain any account property (IBAN, ABA, account number, etc).      |                    |
+| currency                             | Force a default currency                                                                                                   |                    |
+| default_expense                      | Default expense account                                                                                                    | `Expenses:Unknown` |
+| force_negative                       | TODO                                                                                                                       | False              |
+| invert_negative                      | TODO                                                                                                                       | False              |
+| origin_account                       | Specifies the origin account of each transaction                                                                           |                    |
+| ruleset                              | List of rules to apply to the CSV file. See `rules` section.                                                               |                    |
+| advanced_duplicate_detection         | Enable the advanced duplication detection rule (see Advanced Duplicate Detection section)                                  | `true`             |
 
 #### Sample configuration file
 
@@ -147,14 +148,27 @@ rules:
 
 ### Rules
 
-The Beanborg's rules engine comes with a number of preexisting rules. Rules are always referenced by **name** and can be used to assign an account to a transaction, ignore a transaction or replace the name of a transaction's counterparty.
+The Beanborg's rules engine comes with a number of preexisting rules. 
+Rules are always referenced by **name** and can be used to assign an account to a transaction, ignore a transaction or replace the name of a transaction's counterparty.
 Some rules require a look-up table file to find the right value and execute the rule action.
 
-A look-up table file is also a CSV file, composed of 3 columns: `value`, `expression`, `result`.
+Look-up table files are semicolon-separated CSV files, composed of 3 columns: `value`, `expression`, `result`.
 
 - The `value` represents the string that the rule has to search for.
-- The `expression` represents the matching criteria: `equals`, `startsWith`, `endsWith`, `contains`
+- The `expression` represents the matching criteria: `equals`, `equals_ic` `startsWith`, `endsWith`, `contains`, `contains_ic`
 - The `result` represents the rule's output
+
+As an example, let's consider a look-up rule that has to set the expense category to `Expenses:Groceries`, whenever the payee contains the word `Walmart`.
+The look-up entry will look like:
+
+`Walmart;equals;Expenses:Groceries`
+
+If we want to make sure that the `Expenses:Groceries` categories is selected whenever the word `Walmart` appears in the payee reference, regardless of the case, we can use:
+
+`Walmart;contains_ic;Expenses:Groceries`
+
+The `_ic` indicates `ignore case`.
+
 
 The next section lists the rules which are available in Beanborg.
 
@@ -296,6 +310,34 @@ The values are **case-insensitive**.
 
 TODO
 
+### Advanced Duplicate Detection
+
+Beanborg employs a simple duplicate detection method. When a transaction is imported into the ledger, the transaction CSV data are hashed and the hash is permanently associated
+to the ledger entry (using [transaction metadata](https://beancount.github.io/docs/beancount_language_syntax.html#metadata)).
+
+For instance, given this CSV entry:
+
+`2019-03-17,2019-03-18,Überweisung,nick sammy,-520,00,IT389328932723787832,Personal,E-d3be986080315683eee5efbeb297243a,Gebucht,Privat`
+
+The corresponding hash (`2454abe7257b2b40dfa9e5d24b6e16e7`) is attached to the ledger's entry using the `md5` key metadata.
+If we try to import the same CSV row again, the hash will collide and the transaction is rejected.
+
+Unfortunately, there are cases where a bank (hello German banks!) may change the data within a CSV entry after few days from the first CSV export. 
+So the above CSV entry can change to:
+
+`2019-03-17,2019-03-18,Überweisung,Nick Sammy,-520,00,IT389328932723787832,Personal,E-d3be986080315683eee5efbeb297243a,Gebucht,Privat`
+
+Can you spot the difference? 
+The name of the payee has changed from `nick sammy` to `Nick Sammy`.
+This throws a wrench into the wheels of the duplicate detection algorithm, because the hash of the second entry differs from the hash of the first entry.
+So, if we import this transaction again, it will not be detected as duplicated and imported into the ledger.
+
+To solve this problem, a secondary detection algorithm has been introduced. 
+When Beanborg imports a transaction from the CSV file, it checks if an existing transaction having the same 
+date and amount already exists in the ledger for the current account file. 
+If a transaction is found in the ledger, Beanborg ask the user to confirm the import of the suspicious transaction.
+This feature can be switched off setting `advanced_duplicate_detection` to `false` in the account's configuration file.
+ 
 ### Stage 1: move bank CSV file
 
 Download a CSV bank file from your bank and move it to a staging area.

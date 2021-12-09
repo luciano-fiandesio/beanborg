@@ -29,9 +29,12 @@ def resolve_from_decision_table(table, string, default):
     
     eq_check_func = {
         "equals": _equals,
+        "equals_ic": _equals_ignore_case,
         "startsWith": _startsWith,
         "endsWith": _endsWith,
         "contains": _contains,
+        "contains_ic": _contains_ignore_case,
+        
         "eq": _equals,
         "sw": _startsWith,
         "ew": _endsWith,
@@ -50,6 +53,9 @@ def resolve_from_decision_table(table, string, default):
 def _equals(string_a, string_b):
     return string_a == string_b
 
+def _equals_ignore_case(string_a, string_b):
+    return string_a.casefold() == string_b.casefold()
+
 def _startsWith(string_a, string_b):
     return string_a.startswith(string_b)
 
@@ -58,3 +64,7 @@ def _endsWith(string_a, string_b):
 
 def _contains(string_a, string_b):
     return string_b in string_a 
+
+def _contains_ignore_case(string_a, string_b):
+    return string_b.casefold() in string_a.casefold() 
+
