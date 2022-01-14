@@ -39,8 +39,8 @@ def init_duplication_store(account, journal):
 def print_duplication_warning(tx):
 
     print(
-        "Warning: a transaction with identical date and amount already exists.\
-        \ndate: %s\npayee: %s\namount %s"
-        % (tx[0], tx[1], tx[2])
+        "Warning: a transaction with identical date and amount already exists in the ledger.\
+        \ndate: %s\namount %s"
+        % (tx[0], tx[1])
     )
     return query_yes_no("Do you want to import it?")
