@@ -102,7 +102,8 @@ Note that the first index starts from `0`.
 | account      | The index corresponding to the account of the transaction (e.g. the IBAN or ABA code)   |    4    |
 | currency     | The index corresponding to the currency of the transaction                              |    5    |
 | tx_type      | The index corresponding to the transaction type                                         |    2    |
-| amount_in    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the index corresponding to the credited amount                                                                                          |         |
+| amount_in    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the index corresponding to the credited amount  |         |
+| narration    | The index corresponding to the narration or reference field of the transaction          |         |                                                                                   
 
 
 #### rules
