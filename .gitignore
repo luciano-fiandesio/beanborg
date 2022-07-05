@@ -139,3 +139,4 @@ cython_debug/
 
 eag.yaml
 tmp
+deploy_local.sh

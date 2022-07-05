@@ -8,7 +8,7 @@ import glob
 import os
 import sys
 from subprocess import check_call, CalledProcessError
-
+from rich import print as rprint
 from beanborg.arg_parser import eval_args
 from beanborg.config import init_config
 
@@ -20,36 +20,41 @@ def main():
     current_dir = os.getcwd()
 
     if not os.path.isdir(config.csv.download_path):
-        print("folder: %s does not exist!" % (config.csv.download_path))
+        rprint(f'[red]folder: {config.csv.download_path} does not exist![/red]')
         sys.exit(-1)
 
     if not os.path.isdir(config.csv.target):
         os.mkdir(config.csv.target)
 
     # count number of files starting with:
-    file_count = len(glob.glob1(config.csv.download_path, config.csv.name + "*"))
+    file_count = len(
+        glob.glob1(
+            config.csv.download_path,
+            config.csv.name +
+            "*"))
 
     if file_count > 1:
         print(
-            "more than one file starting with %s found in %s. Can not continue."
-            % (config.csv.name, config.csv.download_path)
-        )
+            "more than one file starting with %s found in %s. Can not continue." %
+            (config.csv.name, config.csv.download_path))
         sys.exit(-1)
 
     if file_count == 0:
-        print(
-            "No file found in %s with name starting with: %s"
-            % (config.csv.download_path, config.csv.name)
+        rprint(
+            f'[red]No file found in [bold]{config.csv.download_path}[/bold] ' \
+            f'with name starting with: [bold]{config.csv.name}[/bold][/red]'
         )
         sys.exit(-1)
 
-    if config.csv.post_script_path and not os.path.isfile(config.csv.post_script_path):
+    if config.csv.post_script_path and not os.path.isfile(
+            config.csv.post_script_path):
         print("No post-move script found: %s" % (config.csv.post_script_path))
         sys.exit(-1)
 
     for f in os.listdir(config.csv.download_path):
         if f.startswith(config.csv.name):
-            moved_csv = os.path.join(config.csv.target, config.csv.ref + ".csv")
+            moved_csv = os.path.join(
+                config.csv.target, config.csv.ref + ".csv")
             os.rename(config.csv.download_path + "/" + f, moved_csv)
             if config.csv.post_script_path:
                 try:
@@ -60,8 +65,8 @@ def main():
                         ]
                     )
                 except CalledProcessError as e:
-                    print(
-                        "An error occurred executing: %s\n%s"
+                    rprint(
+                        "[red]An error occurred executing: %s\n%s[/red]"
                         % (config.csv.post_script_path, str(e))
                     )
     print("Done :) ")
