@@ -2,6 +2,7 @@ import os
 import sys
 import yaml
 
+
 class Rules(object):
     def __init__(
         self,
@@ -38,6 +39,7 @@ class Indexes(object):
         currency=None,
         tx_type=None,
         amount_in=None,
+        narration=None,
     ):
         self.date = date
         self.counterparty = counterparty
@@ -46,6 +48,7 @@ class Indexes(object):
         self.currency = currency
         self.tx_type = tx_type
         self.amount_in = amount_in
+        self.narration = narration
 
 
 class Csv(object):
@@ -106,6 +109,7 @@ class Config(object):
             idx.get("currency", 5),
             idx.get("tx_type", 2),
             idx.get("amount_in", None),
+            idx.get("narration", None),
         )
 
         rls = values.get("rules", dict())

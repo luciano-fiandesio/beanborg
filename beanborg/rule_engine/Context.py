@@ -21,6 +21,8 @@ class Context:
     tx_type_pos: int
     # the index of the account id field in the csv file
     account_pos: int
+    # the index of the narration field in the csv file
+    narration_pos: int
     # if the CSV file has no account id, use "account" to lookup the Account Origin
     # when using the Replace_Asset rule
     account: str

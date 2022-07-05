@@ -68,6 +68,7 @@ def init_rule_engine(args):
             payee_pos=args.indexes.counterparty,
             tx_type_pos=args.indexes.tx_type,
             account_pos=args.indexes.account,
+            narration_pos=args.indexes.narration,
             account=args.rules.account,
             ruleset=args.rules.ruleset,
             rules_dir=folder,
@@ -197,6 +198,9 @@ def main():
                             units=Amount(amount, get_currency(row, args))
                         )
                         tx = tx._replace(postings=[new_posting] + [tx.postings[1]])
+
+                        # add narration
+                        tx = tx._replace(narration=row[args.indexes.narration].strip())
 
                         if args.debug:
                             print(tx)
