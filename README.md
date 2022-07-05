@@ -45,6 +45,13 @@ A simple tutorial is available [here](https://github.com/luciano-fiandesio/beanb
 pip install git+https://github.com/luciano-fiandesio/beanborg.git
 ```
 
+If you want to install from a specific branch:
+
+```
+pip install git+https://github.com/luciano-fiandesio/beanborg.git@BRANCH_NAME
+```
+
+
 ## Workflow
 
 Beanborg is based on a very specific workflow, which may or may not work for you.
