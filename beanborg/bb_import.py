@@ -299,7 +299,6 @@ def main():
                 else {}
             )
 
-            pre_trans = []
             for key in sorted(transactions):
                 # check if the transaction being imported matches another existing transaction
                 # in the current ledger file.
@@ -319,14 +318,16 @@ def main():
                         f'\n[red]you have [bold]{no_category}[/bold] transactions without category, do you want to fix them now?[/red]'):
 
                     for i, tx in enumerate(pre_trans):
-                        print(format_entry(tx))
-                        text = prompt(
-                            'Enter account: ',
-                            completer=account_competer,
-                            complete_while_typing=True)
-                        posting = Posting(text, None, None, None, None, None)
-                        new_postings = [tx.postings[0]] + [posting]
-                        pre_trans[i] = tx._replace(postings=new_postings)
+                        if has_no_category(tx, args):
+
+                            print(format_entry(tx))
+                            text = prompt(
+                                'Enter account: ',
+                                completer=account_competer,
+                                complete_while_typing=True)
+                            posting = Posting(text, None, None, None, None, None)
+                            new_postings = [tx.postings[0]] + [posting]
+                            pre_trans[i] = tx._replace(postings=new_postings)
 
                     no_category = count_no_category(pre_trans, args)
 
