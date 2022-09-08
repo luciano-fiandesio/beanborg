@@ -18,8 +18,9 @@ def main():
     args = eval_args("Move bank csv file to processing folder")
     config = init_config(args.file, args.debug)
     current_dir = os.getcwd()
-
-    if not os.path.isdir(config.csv.download_path):
+    # support path like ~/Downloads
+    path = os.path.expanduser(config.csv.download_path)
+    if not os.path.isdir(path):
         rprint(f'[red]folder: {config.csv.download_path} does not exist![/red]')
         sys.exit(-1)
 
@@ -29,7 +30,7 @@ def main():
     # count number of files starting with:
     file_count = len(
         glob.glob1(
-            config.csv.download_path,
+            path,  
             config.csv.name +
             "*"))
 
@@ -51,11 +52,11 @@ def main():
         print("No post-move script found: %s" % (config.csv.post_script_path))
         sys.exit(-1)
 
-    for f in os.listdir(config.csv.download_path):
+    for f in os.listdir(path):
         if f.startswith(config.csv.name):
             moved_csv = os.path.join(
                 config.csv.target, config.csv.ref + ".csv")
-            os.rename(config.csv.download_path + "/" + f, moved_csv)
+            os.rename(path + "/" + f, moved_csv)
             if config.csv.post_script_path:
                 try:
                     check_call(
