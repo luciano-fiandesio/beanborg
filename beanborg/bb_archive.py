@@ -9,10 +9,9 @@ import os
 import shutil
 import sys
 from datetime import datetime
-
+from rich import print as rprint
 from beanborg.arg_parser import eval_args
 from beanborg.config import init_config
-
 
 def main():
 
@@ -22,7 +21,7 @@ def main():
     target_csv = os.path.join(config.csv.target, config.csv.ref + ".csv")
 
     if not os.path.isfile(target_csv):
-        print("file: " + target_csv + " does not exist!")
+        rprint(f'[red]file: {target_csv}  does not exist![red]')
         sys.exit(-1)
 
     if not os.path.isdir(config.csv.archive):
@@ -48,19 +47,18 @@ def main():
     print(u"\u2713" + " moving file to archive...")
     os.rename(
         target_csv,
-        config.csv.archive
-        + "/"
-        + config.csv.ref
-        + "_"
-        + str(min(dates).date())
-        + "_"
-        + str(max(dates).date())
-        + ".csv",
+        config.csv.archive +
+        "/" +
+        config.csv.ref +
+        "_" +
+        str(min(dates).date()) +
+        "_" +
+        str(max(dates).date()) +
+        ".csv",
     )
 
     print(u"\u2713" + " removing temp folder")
     shutil.rmtree(config.csv.target)
-
 
 if __name__ == "__main__":
     main()

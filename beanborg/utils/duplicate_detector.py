@@ -1,7 +1,8 @@
 import hashlib
+from rich.prompt import Confirm
+from rich import print as rprint
 from beancount import loader
 from beancount.core.data import Transaction
-from beanborg.utils.input import query_yes_no
 
 
 def hash_tuple(tuple):
@@ -38,9 +39,7 @@ def init_duplication_store(account, journal):
 
 def print_duplication_warning(tx):
 
-    print(
-        "Warning: a transaction with identical date and amount already exists in the ledger.\
-        \ndate: %s\namount %s"
-        % (tx[0], tx[1])
-    )
-    return query_yes_no("Do you want to import it?")
+    rprint('[red]Warning[/red]: a transaction with identical date and' \
+        ' amount already exists in the ledger. ' \
+        f'\ndate: [bold]{tx[0]}[/bold]\namount [bold]{tx[1]}[/bold]')
+    return Confirm.ask("Do you want to import it?")

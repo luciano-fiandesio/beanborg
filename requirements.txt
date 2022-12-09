@@ -1,2 +1,4 @@
 beancount==2.3.3
 pyyaml==5.4.1
+rich==12.4.4
+prompt-toolkit==3.0.30
