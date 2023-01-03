@@ -3,7 +3,6 @@ from beanborg.rule_engine.Context import *
 from beanborg.rule_engine.decision_tables import *
 from beanborg.config import *
 
-
 def test_payee_replacement():
 
     rule_engine = make_rule_engine('tests/files/bank1_replace_counterparty.yaml')
@@ -12,14 +11,12 @@ def test_payee_replacement():
     tx = rule_engine.execute(entries)
     assert tx.payee == "Ford Auto"
 
-
 def test_asset_replacement():
 
     rule_engine = make_rule_engine('tests/files/bank1_replace_asset.yaml')
     entries = "31.10.2019,b,auszahlung,electro ford,x,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
     assert tx.postings[0].account == "Assets:Bob:Savings"
-
 
 def test_expense_replacement():
 
@@ -29,7 +26,6 @@ def test_expense_replacement():
     )
     tx = rule_engine.execute(entries)
     assert tx.postings[1].account == "Expenses:Groceries"
-
 
 def test_ignore():
 
@@ -42,7 +38,6 @@ def test_ignore():
     entries = "31.10.2019,b,auszahlung,beta,x,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
     assert tx == None
-
 
 def test_ignore_at_position():
 

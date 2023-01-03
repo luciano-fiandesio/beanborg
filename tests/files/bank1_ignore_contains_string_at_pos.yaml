@@ -29,5 +29,5 @@ rules:
   invert_negative: true
   ruleset:
     - name: Ignore_By_ContainsStringAtPos
-      ignore_string_contains_at_pos: 
+      ignore_string_contains_at_pos:
         - waiting;4

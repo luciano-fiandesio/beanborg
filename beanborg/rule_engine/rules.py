@@ -42,10 +42,10 @@ class Rule:
                 "Account from and to required for rule " + ruleDef.rule.__name__
             )
 
-    def checkIgnorePayee(self, ruleDef):
-        if ruleDef.get("ignore_payee") is None:
+    def failIfAttributeMissing(self, ruleDef, attributeName):
+        if ruleDef.get(attributeName) is None:
             raise Exception(
-                "Ignore by payee (ignore_payee) required for rule "
+                "Attribute " + attributeName + " required for rule "
                 + ruleDef.rule.__name__
             )
 
@@ -213,7 +213,7 @@ class Ignore_By_Payee(Rule):
 
     def execute(self, csv_line, tx=None, ruleDef=None):
 
-        self.checkIgnorePayee(ruleDef)
+        self.failIfAttributeMissing(ruleDef, "ignore_payee")
         for ignorablePayee in ruleDef.get("ignore_payee"):
             if ignorablePayee.lower() in csv_line[self.context.payee_pos].lower():
                 return (True, None)
@@ -248,6 +248,7 @@ class Ignore_By_StringAtPos(Rule):
 
     def execute(self, csv_line, tx=None, ruleDef=None):
 
+        self.failIfAttributeMissing(ruleDef, "ignore_string_at_pos")
         for ignorable in ruleDef.get("ignore_string_at_pos"):
             pos = int(ignorable.split(";")[1])
             strToIgnore = ignorable.split(";")[0]
@@ -287,6 +288,8 @@ class Ignore_By_ContainsStringAtPos(Rule):
         Rule.__init__(self, name, context)
 
     def execute(self, csv_line, tx=None, ruleDef=None):
+
+        self.failIfAttributeMissing(ruleDef, "ignore_string_contains_at_pos")
 
         for ignorable in ruleDef.get("ignore_string_contains_at_pos"):
             pos = int(ignorable.split(";")[1])
