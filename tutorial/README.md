@@ -13,15 +13,13 @@ main.ldg
   |__ UK0000001444555.ldg
 ```
 
-To get started, simply clone the [Beanborg](https://github.com/luciano-fiandesio/beanborg) repository and follow the installation steps.
+To get started, install beanborg using `pip`:
 
 ```
-git clone https://github.com/luciano-fiandesio/beanborg
-
-cd beanborg/tutorial
+pip install git+https://github.com/luciano-fiandesio/beanborg.git
 ```
 
-It is probably a good idea to take a quick look at the project's [README](https://github.com/luciano-fiandesio/beanborg/blob/master/README.md), to get an idea of the Beanborg workflow and understand the various configuration options.
+To get an idea of the Beanborg workflow and learn about the different configuration options, you might want to take a quick look at the project's [README](https://github.com/luciano-fiandesio/beanborg/blob/master/README.md).
 
 The goal of this tutorial is to be able to import the transactions from the [sample CSV](https://github.com/luciano-fiandesio/beanborg/blob/master/tutorial/test-data/eagle-bank-statement.csv) file into the ledger-managed `UK0000001444555.ldg` file.
 
@@ -81,10 +79,10 @@ The `date_format`, `separator` and `currency_sep` should be self-explanatory.
 
 We don't need to specify the `skip` property, since the default value is `1`.
 
-Let's try to import the CVS file into the working area, using `bb_mover.py`.
+Let's try to import the CVS file into the working area, using `bb_mover`.
 
 ```
-bb_mover.py -f config/eagle.yaml
+bb_mover -f config/eagle.yaml
 ```
 
 If the file is found, the script should return:
@@ -108,6 +106,9 @@ indexes:
     currency: 5
     account: 7
 ```
+
+Note that the `indexes` block sits at the root of the yaml file (same "level" as `csv`)
+
 
 With this block of configuration we are instructing Beanborg about the data within our CSV file.
 This image should hopefully makes the concept more clear:
@@ -133,7 +134,7 @@ rules:
     - name: Replace_Expense
 ```
 
-Before importing the CSV data, we need one last step: a configuration file (named `assets`)  that helps Beanborg associate the bank account asset definition (`Assets:Bank1:Bob:Current`, which is the bank account defined in Beanborg used in this tutorial) to the bank account identifier in the CSV file (in this tutorial, the IBAN number).
+Before importing the CSV data, we need one last step: a configuration file (named `asset.rules`)  that helps Beanborg associate the bank account asset definition (`Assets:Bank1:Bob:Current`, which is the bank account defined in Beanborg used in this tutorial) to the bank account identifier in the CSV file (in this tutorial, the IBAN number).
 Note that this file is required by the `Replace_Asset` rule, which is automatically executed, even if it's not specified in the rules list.
 
 In Beanborg, all configuration files are placed into the `rules` folder - note that the folder name can be changed using the `rules_folder` property of the `rules` configuration.
@@ -141,10 +142,10 @@ In Beanborg, all configuration files are placed into the `rules` folder - note t
 ```
 mkdir rules
 cd rules
-touch assets.rules
+touch asset.rules
 ```
 
-Copy the following content into `assets.rules`
+Copy the following content into `asset.rules`
 
 ```
 value;expression;result
@@ -155,7 +156,7 @@ UK0000001444555;equals;Assets:Bank1:Bob:Current
 It's now time to run the second Beanborg script, `bb_import`, which imports the transaction into the ledger.
 
 ```
-bb_import.py -f config/eagle.yaml
+bb_import -f config/eagle.yaml
 ```
 
 The script should exit immediately with the following error:
