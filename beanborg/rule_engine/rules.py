@@ -37,13 +37,13 @@ class Rule:
         return
 
     def checkAccountFromTo(self, ruleDef):
-        if ruleDef.account_from is None or ruleDef.account_to is None:
+        if ruleDef.get("from") is None or ruleDef.get("to") is None:
             raise Exception(
                 "Account from and to required for rule " + ruleDef.rule.__name__
             )
 
     def checkIgnorePayee(self, ruleDef):
-        if ruleDef.ignore_payee is None:
+        if ruleDef.get("ignore_payee") is None:
             raise Exception(
                 "Ignore by payee (ignore_payee) required for rule "
                 + ruleDef.rule.__name__
@@ -214,7 +214,7 @@ class Ignore_By_Payee(Rule):
     def execute(self, csv_line, tx=None, ruleDef=None):
 
         self.checkIgnorePayee(ruleDef)
-        for ignorablePayee in ruleDef.ignore_payee:
+        for ignorablePayee in ruleDef.get("ignore_payee"):
             if ignorablePayee.lower() in csv_line[self.context.payee_pos].lower():
                 return (True, None)
 
@@ -222,7 +222,20 @@ class Ignore_By_Payee(Rule):
 
 class Ignore_By_StringAtPos(Rule):
     """
-    Ignores a transaction based on the value of the specified index
+    Ignores a transaction based on the value of the specified index.
+
+    For instance, given this csv entry:
+
+    10.12.2022,bp-fuel,20US$
+
+    and this rule:
+
+    -  name: Ignore_By_ContainsStringAtPos
+           ignore_string_at_pos:
+               - bp-fuel;1
+
+    The row will be ignored, because the string "bp-fuel" matches
+    the index at position 1.
 
     Example:
         -  name: Ignore_By_StringAtPos
@@ -235,7 +248,7 @@ class Ignore_By_StringAtPos(Rule):
 
     def execute(self, csv_line, tx=None, ruleDef=None):
 
-        for ignorable in ruleDef.ignore_string_at_pos:
+        for ignorable in ruleDef.get("ignore_string_at_pos"):
             pos = int(ignorable.split(";")[1])
             strToIgnore = ignorable.split(";")[0]
 
@@ -243,3 +256,40 @@ class Ignore_By_StringAtPos(Rule):
                 return (True, None)
 
         return (False, tx)
+
+class Ignore_By_ContainsStringAtPos(Rule):
+    """
+    Ignores a transaction if the specified value is present
+    in the specified index.
+    For instance, given this csv entry:
+
+    10.12.2022,mega supermarket,20US$
+
+    and this rule:
+
+    -  name: Ignore_By_ContainsStringAtPos
+           ignore_string_at_pos:
+               - mega;1
+
+    The row will be ignored, because the string "mega" is part of
+    the index at position 1.
+
+    Note that this rule supports multiple string specifications.
+
+    Example:
+        -  name: Ignore_By_ContainsStringAtPos
+           ignore_string_at_pos:
+               - val;3
+               - another val;6
+    """
+
+    def __init__(self, name, context):
+        Rule.__init__(self, name, context)
+
+    def execute(self, csv_line, tx=None, ruleDef=None):
+
+        for ignorable in ruleDef.get("ignore_string_contains_at_pos"):
+            pos = int(ignorable.split(";")[1])
+            strToIgnore = ignorable.split(";")[0]
+            if strToIgnore.lower() in csv_line[pos].lower():
+                return (True, None)

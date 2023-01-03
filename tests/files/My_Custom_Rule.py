@@ -12,14 +12,14 @@ class My_Custom_Rule(Rule):
 
         if "Withdrawal".lower() in csv_line[self.context.tx_type_pos].lower():
             cashPosting = [Posting(
-                account=ruleDef.account_from,
+                account=ruleDef.get("from"),
                 units=None,
                 cost=None,
                 price=None,
                 flag=None,
                 meta=None),
             Posting(
-                account=ruleDef.account_to,
+                account=ruleDef.get("to"),
                 units=None,
                 cost=None,
                 price=None,
