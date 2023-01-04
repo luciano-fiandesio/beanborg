@@ -11,7 +11,7 @@ import yaml
 from .Context import Context
 from .rules import *
 from dataclasses import dataclass
-
+from typing import Dict, List
 import os
 import re
 import importlib
@@ -25,12 +25,13 @@ __location__ = os.path.realpath(os.path.join(
 @dataclass
 class RuleDef:
     rule: str
-    account_from: str
-    account_to: str
-    csv_index: int
-    ignore_payee: str
-    csv_value: str
-    ignore_string_at_pos: str
+    attributes: Dict[str,List[str]]
+
+    def get(self, key):
+        return self.attributes[key]
+
+
+
 
 
 class Rule_Init(Rule):
@@ -72,6 +73,11 @@ class Rule_Init(Rule):
 
 
 class RuleEngine:
+
+    def handle(self, cr):
+
+        return cr
+
     def __init__(self, ctx: Context):
 
         self._ctx = ctx
@@ -84,47 +90,29 @@ class RuleEngine:
             self.rules = {}
         else:
             for yrule in self._ctx.ruleset:
-                rule_name = yrule["name"]  # rule name
-                xfrom = yrule.get("from")  # Account from
-                xto = yrule.get("to")  # Account to
-                xpos = yrule.get("csv_index")  # CSV index (base 0)
-                # Payee string to ignore
-                xignore = yrule.get("ignore_payee")
-                # semicolon separated strings
-                xstring = yrule.get("csv_values")
-                xignorepos = yrule.get("ignore_string_at_pos")
+                rule_props = {}
+                for key in yrule:
+                    if key == "name":
+                        rule_name = yrule["name"]
+                    else:
+                        rule_props[key] = yrule.get(key)
 
                 if rule_name in custom_rules:
                     self.rules[rule_name] = RuleDef(
                         custom_rules[rule_name],
-                        xfrom,
-                        xto,
-                        xpos,
-                        xignore,
-                        xstring,
-                        xignorepos,
+                        rule_props
                     )
                 else:
                     self.rules[rule_name] = RuleDef(
-                        globals()[rule_name],
-                        xfrom,
-                        xto,
-                        xpos,
-                        xignore,
-                        xstring,
-                        xignorepos,
+                        globals()[rule_name]
+,                        rule_props
                     )
         # assign default rules, if they are not already specified
         if ctx.rules_dir: # do not auto-add if there is no rules folder!
             if 'Replace_Asset' not in self.rules:
                 self.rules['Replace_Asset'] = RuleDef(
                             globals()['Replace_Asset'],
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
+                            None
                         )
 
 
