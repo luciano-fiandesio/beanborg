@@ -120,9 +120,14 @@ class RuleEngine:
 
         custom_rulez = {}
         if self._ctx.rules_dir != None:
-            sys.path.append(os.getcwd() + "/" + self._ctx.rules_dir)
+            custom_rules_path = os.path.join(os.getcwd(), self._ctx.rules_dir)
+            if not os.path.isdir(custom_rules_path):
+                if self._ctx.debug:
+                    print("Custom rules folder not found...ignoring")
+                return custom_rulez
+            sys.path.append(custom_rules_path)
             custom_rules = fnmatch.filter(
-                os.listdir(os.getcwd() + "/" + self._ctx.rules_dir), "*.py"
+                os.listdir(custom_rules_path), "*.py"
             )
             for r in custom_rules:
                 mod_name = r[:-3]
