@@ -29,10 +29,9 @@ def init_duplication_store(account, journal):
     transactions = {}
     entries, _, _ = loader.load_file(journal)
     for entry in entries:
-        if isinstance(entry, Transaction):
-            if entry.meta["filename"].endswith(account):
-                tup = to_tuple(entry)
-                transactions[hash_tuple(tup)] = tup
+        if isinstance(entry, Transaction) and entry.meta["filename"].endswith(account):
+            tup = to_tuple(entry)
+            transactions[hash_tuple(tup)] = tup
 
     return transactions
 

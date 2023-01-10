@@ -16,13 +16,11 @@ class AmountHandler:
             return self.__convert(
                 val[args.indexes.amount_in].strip()) - self.__convert(val)
 
-        if args.rules.invert_negative:
-            if val[0] == "-":
-                val = val.replace("-", "+")
+        if args.rules.invert_negative and val[0] == "-":
+            val = val.replace("-", "+")
 
-        if args.rules.force_negative == 1:
-            if val[0].isdigit():
-                val = "-" + val
+        if args.rules.force_negative == 1 and val[0].isdigit():
+            val = "-" + val
 
         return self.__convert(val)
 

@@ -2,7 +2,7 @@
 import csv
 import os
 import sys
-import random
+from random import SystemRandom
 import traceback
 from dataclasses import dataclass
 from beanborg.arg_parser import eval_args
@@ -68,7 +68,7 @@ class Importer:
         start = datetime(min_year, 1, 1, 00, 00, 00)
         years = max_year - min_year + 1
         end = start + timedelta(days=365 * years)
-        return start + (end - start) * random.random()
+        return start + (end - start) * SystemRandom.random()
 
     def init_rule_engine(self):
         """
@@ -78,18 +78,16 @@ class Importer:
 
         folder = self.args.rules.rules_folder
 
-        if len(self.args.rules.ruleset) > 1:
+        if len(self.args.rules.ruleset) > 1 \
+                and not os.path.isfile(folder + "/asset.rules") \
+                and self.args.rules.account is None \
+                and self.args.rules.origin_account is None:
 
-            if (
-                not os.path.isfile(
-                    folder + "/asset.rules") and self.args.rules.account
-                is None and self.args.rules.origin_account is None
-            ):
-                rprint(
-                    "[red]Please specify an account in your config file "
-                    "or create an entry in the asset.rules file[/red]"
-                )
-                sys.exit(-1)
+            rprint(
+                "[red]Please specify an account in your config file "
+                "or create an entry in the asset.rules file[/red]"
+            )
+            sys.exit(-1)
 
         return RuleEngine(
             Context(

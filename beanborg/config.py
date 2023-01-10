@@ -3,7 +3,7 @@ import sys
 import yaml
 
 
-class Rules(object):
+class Rules:
     def __init__(
         self,
         bc_file=None,
@@ -29,7 +29,7 @@ class Rules(object):
         self.advanced_duplicate_detection = advanced_duplicate_detection
 
 
-class Indexes(object):
+class Indexes:
     def __init__(
         self,
         date=None,
@@ -51,7 +51,7 @@ class Indexes(object):
         self.narration = narration
 
 
-class Csv(object):
+class Csv:
     def __init__(
         self,
         download_path,
@@ -75,7 +75,7 @@ class Csv(object):
         self.post_script_path = post_script_path
 
 
-class Config(object):
+class Config:
     def __init__(self, csv, indexes, rules, debug=False):
         self.csv = csv
         self.indexes = indexes
@@ -139,7 +139,7 @@ def init_config(file, debug):
         sys.exit(-1)
 
     with open(file, "r") as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
+        config = yaml.safe_load(file, Loader=yaml.FullLoader)
 
     config.debug = debug
     return config

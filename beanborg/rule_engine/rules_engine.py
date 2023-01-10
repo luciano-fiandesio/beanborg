@@ -96,12 +96,11 @@ class RuleEngine:
                         globals()[rule_name], rule_props
                     )
         # assign default rules, if they are not already specified
-        if ctx.rules_dir:  # do not auto-add if there is no rules folder!
-            if 'Replace_Asset' not in self.rules:
-                self.rules['Replace_Asset'] = RuleDef(
-                    globals()['Replace_Asset'],
-                    None
-                )
+        if ctx.rules_dir and 'Replace_Asset' not in self.rules:
+            self.rules['Replace_Asset'] = RuleDef(
+                globals()['Replace_Asset'],
+                None
+            )
 
     def load_custom_rules(self):
 
