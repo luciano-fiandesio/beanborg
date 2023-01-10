@@ -139,7 +139,7 @@ def init_config(file, debug):
         sys.exit(-1)
 
     with open(file, "r") as file:
-        config = yaml.safe_load(file, Loader=yaml.FullLoader)
+        config = yaml.load(file, Loader=yaml.FullLoader)
 
     config.debug = debug
     return config

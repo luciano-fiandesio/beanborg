@@ -68,7 +68,7 @@ class Importer:
         start = datetime(min_year, 1, 1, 00, 00, 00)
         years = max_year - min_year + 1
         end = start + timedelta(days=365 * years)
-        return start + (end - start) * SystemRandom.random()
+        return start + (end - start) * SystemRandom.random(self)
 
     def init_rule_engine(self):
         """
