@@ -8,18 +8,11 @@ from dataclasses import dataclass
 from beanborg.arg_parser import eval_args
 from beanborg.config import init_config
 from rich import print as rprint
-from rich.prompt import Confirm
 from rich.table import Table
 from datetime import datetime, timedelta
 from beancount.parser.printer import format_entry
-from beancount import loader
-from beancount.core.data import Transaction, Amount, Posting
-from beancount.core.getters import get_accounts
-from prompt_toolkit import prompt
-from prompt_toolkit.completion import FuzzyWordCompleter
+from beancount.core.data import Amount
 from beanborg.handlers.amount_handler import AmountHandler
-from beanborg.arg_parser import eval_args
-from beanborg.config import init_config
 from beanborg.rule_engine.Context import Context
 from beanborg.rule_engine.rules_engine import RuleEngine
 from beanborg.utils.hash_utils import hash
@@ -33,6 +26,7 @@ from beanborg.classification.classifier import Classifier
 from beanborg.model.transactions import Transactions
 from beanborg.utils.journal_utils import JournalUtils
 
+
 @dataclass
 class ImportStats:
     tx_in_file: int = 0
@@ -45,8 +39,17 @@ class ImportStats:
 
 
 class Importer:
+    """
+    Initialize the import rule engine using the arguments from
+    the configuration file
+    """
 
     def debug(self):
+        """check if the importer is started using the debug flag
+
+        Returns:
+            boolean: is debug
+        """
         return self.args.debug
 
     def log_error(self, row):
@@ -78,11 +81,10 @@ class Importer:
         if len(self.args.rules.ruleset) > 1:
 
             if (
-                not os.path.isfile(folder + "/asset.rules") and
-                self.args.rules.account is None and
-                self.args.rules.origin_account is None
+                not os.path.isfile(
+                    folder + "/asset.rules") and self.args.rules.account
+                is None and self.args.rules.origin_account is None
             ):
-
                 rprint(
                     "[red]Please specify an account in your config file "
                     "or create an entry in the asset.rules file[/red]"
@@ -105,6 +107,25 @@ class Importer:
                 debug=self.args.debug,
             )
         )
+
+    def print_summary(self):
+        table = Table(title="Import Summary")
+        table.add_column("Counter", style="magenta")
+        table.add_column("Value", style="green", justify="right")
+        table.add_row("csv tx count", str(self.stats.tx_in_file))
+        table.add_row("imported", str(self.stats.processed))
+        table.add_row("tx already present", str(self.stats.hash_collision))
+        table.add_row("tx ignored by rule", str(self.stats.ignored_by_rule))
+        table.add_row("tx skipped by user", str(self.stats.skipped_by_user))
+
+        if self.stats.error > 0:
+            table.add_row("error", str(
+                self.stats.error), style="red")
+        else:
+            table.add_row("error", str(self.stats.error))
+        table.add_row("tx without category", str(self.stats.no_category))
+        print("\n")
+        rprint(table)
 
     def get_account(self, row):
         """get the account value for the given csv line
@@ -142,16 +163,24 @@ class Importer:
         )
         return account_tx
 
+    def verify_accounts_count(self):
+        if len(self.accounts) > 1 and len(self.transactions) > 0:
+            rprint(
+                '[red]Expecting only one account in csv'
+                f'file, found: {str(len(self.accounts))}[/red]'
+            )
+
     def verify_unique_transactions(self, account):
 
         account_txs = self.fetch_account_transactions(account)
         pre_trans = []
         for key in sorted(self.txs.getTransactions()):
-            # check if the transaction being imported matches another existing transaction
+            # check if the transaction being imported matches another
+            # existing transaction
             # in the current ledger file.
             tup = to_tuple(self.txs.getTransactions()[key])
             if hash_tuple(tup) in account_txs:
-                if print_duplication_warning(account_tx[hash_tuple(tup)]):
+                if print_duplication_warning(account_txs[hash_tuple(tup)]):
                     pre_trans.append(self.txs[key])
             else:
                 pre_trans.append(self.txs.getTransactions()[key])
@@ -214,6 +243,7 @@ class Importer:
                     if self.debug():
                         traceback.print_exc()
 
+        self.verify_accounts_count()
         working_account = self.accounts.pop()
         filtered_txs = self.verify_unique_transactions(working_account)
 
@@ -221,12 +251,12 @@ class Importer:
         self.stats.processed = filtered_txs.count()
 
         if filtered_txs.count_no_category(self.args.rules.default_expense) > 0:
-           Classifier().classify(filtered_txs, self.args)
+            Classifier().classify(filtered_txs, self.args)
 
         # write transactions to file
         account_file = working_account + ".ldg"
         self.write_to_ledger(account_file, filtered_txs.getTransactions())
-
+        self.print_summary()
 
     def validate(self, tx):
         """
@@ -294,8 +324,8 @@ class Importer:
             # generate a key based on:
             # - the tx date
             # - a random time (tx time is not important, but date is!)
-            self.txs.getTransactions()[str(tx_date) +
-                                       str(self.gen_datetime().time())] = tx
+            key = str(tx_date) + str(self.gen_datetime().time())
+            self.txs.getTransactions()[key] = tx
 
         else:
             self.stats.ignored_by_rule += 1

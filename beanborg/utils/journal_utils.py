@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from beancount import loader
-from beancount.core.data import Transaction, Amount, Posting
+from beancount.core.data import Transaction
 from beancount.core.getters import get_accounts
+
 
 class JournalUtils:
 

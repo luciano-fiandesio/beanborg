@@ -4,8 +4,9 @@ import abc
 import os
 import sys
 from .Context import Context
-from beancount.core.data import Transaction, Posting, Amount, Close, Open
-from .decision_tables import *
+from beancount.core.data import Posting
+from .decision_tables import init_decision_table, resolve_from_decision_table
+
 
 class LookUpCache:
     """
@@ -22,7 +23,8 @@ class LookUpCache:
 
         data = init_decision_table(path)
         LookUpCache.cache[key] = data
-        return data   
+        return data
+
 
 class Rule:
     __metaclass__ = abc.ABCMeta
@@ -38,29 +40,32 @@ class Rule:
 
     def checkAccountFromTo(self, ruleDef):
         if ruleDef.get("from") is None or ruleDef.get("to") is None:
-            raise Exception(
-                "Account from and to required for rule " + ruleDef.rule.__name__
-            )
+            raise Exception("Account from and to required for rule: {rule}"
+                            .format(rule=ruleDef.rule.__name__))
 
     def failIfAttributeMissing(self, ruleDef, attributeName):
         if ruleDef.get(attributeName) is None:
             raise Exception(
-                "Attribute " + attributeName + " required for rule "
-                + ruleDef.rule.__name__
+                "Attribute {attribute_name} required for rule: {rule} "
+                .format(attribute_name=attributeName,
+                        rule=ruleDef.rule.__name__)
             )
+
 
 class Set_Accounts(Rule):
     """
-    Assign a from/to asset or account to a transaction, depending on the value of a
-    given cvs index.
+    Assign a from/to asset or account to a transaction, depending on the
+    value of a given cvs index.
 
     Rule attributes:
         name: rule name (Set_Accounts)
         from: asset or account
         to:   asset or account
         csv_index: csv row index to analyze (base-0)
-        csv_values: semicolon delimited list of strings. If any of the values matches the
-                    value at the csv row's index, the from/to values are assigned.
+        csv_values: semicolon delimited list of strings.
+                    If any of the values matches the
+                    value at the csv row's index, the from/to values
+                    are assigned.
                     The string evaluation is case insensitive.
 
     Example:
@@ -112,11 +117,13 @@ class Set_Accounts(Rule):
 
         return (False, tx)
 
+
 class Replace_Payee(Rule):
     """
-    Replaces the name of the transaction counterparty (for instance: McDonald -> Mc Donald Restaurant)
-    The rule file containing the substitution rules must be located in the rules folder and
-    must be named "payee.rules"
+    Replaces the name of the transaction counterparty
+    (for instance: McDonald -> Mc Donald Restaurant)
+    The rule file containing the substitution rules
+    must be located in the rules folder and must be named "payee.rules"
     """
 
     def __init__(self, name, context):
@@ -125,9 +132,11 @@ class Replace_Payee(Rule):
     def execute(self, csv_line, tx, ruleDef=None):
         table = os.path.join(self.context.rules_dir, 'payee.rules')
         if not os.path.isfile(table):
-            print("file: %s does not exist! - The 'Replace_Payee' rules requires the payee.rules file." % (table))
+            print(
+                "file: %s does not exist! - The 'Replace_Payee' rules \
+                    requires the payee.rules file." % (table))
             sys.exit(-1)
-        
+
         return (
             False,
             tx._replace(
@@ -139,16 +148,20 @@ class Replace_Payee(Rule):
             ),
         )
 
+
 class Replace_Asset(Rule):
     """
-    Assigns an account to a transaction, based on value of the 'account' index of a CSV file row.
-    This rule is useful to assign the correct source account of a CSV transaction.
-    
+    Assigns an account to a transaction, based on value of the 'account' index
+    of a CSV file row.
+    This rule is useful to assign the correct source account
+    of a CSV transaction.
+
     The rule is based on the 'asset.rules' look-up file.
-    If no 'asset.rules' file is found, the account will be resolved to "Assets:Unknown" or
+    If no 'asset.rules' file is found, the account
+    will be resolved to "Assets:Unknown" or
     to the value of the property `rules.origin_account` of the config file.
     """
-    
+
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
 
@@ -160,9 +173,12 @@ class Replace_Asset(Rule):
             asset = self.context.force_account
         else:
             if not os.path.isfile(table):
-                print("file: %s does not exist! - The 'Replace_Asset' rules requires the asset.rules file." % (table))
+                print(
+                    "file: %s does not exist! - \
+                        The 'Replace_Asset' rules requires the asset.rules \
+                            file." % (table))
                 sys.exit(-1)
-            
+
             asset = resolve_from_decision_table(
                 LookUpCache.init_decision_table("asset", table),
                 self.context.account
@@ -170,7 +186,7 @@ class Replace_Asset(Rule):
                 else csv_line[self.context.account_pos],
                 "Assets:Unknown"
             )
-        
+
         if asset:
             posting = Posting(asset, None, None, None, None, None)
             new_postings = [posting] + [tx.postings[1]]
@@ -178,23 +194,27 @@ class Replace_Asset(Rule):
 
         return (False, tx)
 
+
 class Replace_Expense(Rule):
     """
-    Categorizes a transaction by assigning the account extracted from a look-up table
+    Categorizes a transaction by assigning the account
+    extracted from a look-up table
     based on the 'payee_pos' index of a CSV file row.
 
     The rule is based on the 'payee.rules' look-up file.
     """
+
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
 
     def execute(self, csv_line, tx=None, ruleDef=None):
         table = os.path.join(self.context.rules_dir, 'account.rules')
-        
+
         if not os.path.isfile(table):
-                print("file: %s does not exist! - The 'Replace_Expense' rules requires the account.rules file." % (table))
-                sys.exit(-1)
-            
+            print("file: % s does not exist! - The 'Replace_Expense' rules \
+                  requires the account.rules file." % (table))
+            sys.exit(-1)
+
         expense = resolve_from_decision_table(
             LookUpCache.init_decision_table("account", table),
             csv_line[self.context.payee_pos],
@@ -207,6 +227,7 @@ class Replace_Expense(Rule):
 
         return (False, tx)
 
+
 class Ignore_By_Payee(Rule):
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
@@ -215,10 +236,12 @@ class Ignore_By_Payee(Rule):
 
         self.failIfAttributeMissing(ruleDef, "ignore_payee")
         for ignorablePayee in ruleDef.get("ignore_payee"):
-            if ignorablePayee.lower() in csv_line[self.context.payee_pos].lower():
+            if ignorablePayee.lower() in \
+                    csv_line[self.context.payee_pos].lower():
                 return (True, None)
 
         return (False, tx)
+
 
 class Ignore_By_StringAtPos(Rule):
     """
@@ -242,7 +265,7 @@ class Ignore_By_StringAtPos(Rule):
            ignore_string_at_pos:
                - val;3
     """
-    
+
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
 
@@ -257,6 +280,7 @@ class Ignore_By_StringAtPos(Rule):
                 return (True, None)
 
         return (False, tx)
+
 
 class Ignore_By_ContainsStringAtPos(Rule):
     """

@@ -21,8 +21,8 @@ def to_tuple(transaction):
 def init_duplication_store(account, journal):
     """
     Builds a map of existing transactions for the account being imported.
-    Each map entry has an hash of the value as key and a tuple of transaction date
-    and amount value.
+    Each map entry has an hash of the value as key and a tuple of
+    transaction date and amount value.
     This map is used to report identical transactions being imported,
     should the standard hash based approach fail.
     """
@@ -39,7 +39,7 @@ def init_duplication_store(account, journal):
 
 def print_duplication_warning(tx):
 
-    rprint('[red]Warning[/red]: a transaction with identical date and' \
-        ' amount already exists in the ledger. ' \
-        f'\ndate: [bold]{tx[0]}[/bold]\namount [bold]{tx[1]}[/bold]')
+    rprint('[red]Warning[/red]: a transaction with identical date and'
+           ' amount already exists in the ledger. '
+           f'\ndate: [bold]{tx[0]}[/bold]\namount [bold]{tx[1]}[/bold]')
     return Confirm.ask("Do you want to import it?")
