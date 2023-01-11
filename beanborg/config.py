@@ -63,6 +63,7 @@ class Csv:
         target=None,
         archive=None,
         post_script_path=None,
+        keep_original=None,
     ):
         self.download_path = download_path
         self.name = name
@@ -73,6 +74,7 @@ class Csv:
         self.target = target
         self.archive = archive
         self.post_script_path = post_script_path
+        self.keep_original = keep_original
 
 
 class Config:
@@ -97,6 +99,8 @@ class Config:
             csv_data.get("target", "tmp"),
             csv_data.get("archive_path", "archive"),
             csv_data.get("post_move_script"),
+            csv_data.get("keep_original", False)
+
         )
 
         idx = values.get("indexes", dict())

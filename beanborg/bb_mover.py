@@ -7,6 +7,7 @@ __license__ = "GNU GPLv2"
 import glob
 import os
 import sys
+import shutil
 from subprocess import check_call, CalledProcessError
 from rich import print as rprint
 from beanborg.arg_parser import eval_args
@@ -55,9 +56,14 @@ def main():
 
     for f in os.listdir(path):
         if f.startswith(config.csv.name):
+            src = os.path.join(path, f)
             moved_csv = os.path.join(
                 config.csv.target, config.csv.ref + ".csv")
-            os.rename(path + "/" + f, moved_csv)
+            if config.csv.keep_original:
+                shutil.copy(src,moved_csv)
+            else:
+                os.rename(src, moved_csv)
+
             if config.csv.post_script_path:
                 try:
                     check_call(

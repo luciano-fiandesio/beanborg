@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import uuid
 from beancount.core.data import Transaction, Posting
 from .Context import Context
 from .rules import *
@@ -92,15 +93,23 @@ class RuleEngine:
                         rule_props
                     )
                 else:
-                    self.rules[rule_name] = RuleDef(
+                    unique_rule_name = rule_name + "|" + uuid.uuid4().hex.upper()[0:6]
+                    self.rules[unique_rule_name] = RuleDef(
                         globals()[rule_name], rule_props
                     )
         # assign default rules, if they are not already specified
-        if ctx.rules_dir and 'Replace_Asset' not in self.rules:
+        if ctx.rules_dir and not self.is_rule_in_list('Replace_Asset'):
             self.rules['Replace_Asset'] = RuleDef(
                 globals()['Replace_Asset'],
                 None
             )
+
+    def is_rule_in_list(self, name):
+        for rule_name in self.rules:
+            if rule_name.startswith(name):
+                return True
+
+        return False
 
     def load_custom_rules(self):
 
