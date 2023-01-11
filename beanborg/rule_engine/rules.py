@@ -83,10 +83,11 @@ class Set_Accounts(Rule):
     def execute(self, csv_line, tx, ruleDef=None):
 
         # current value at index for the current row
-        csv_field_val = csv_line[ruleDef.csv_index].lower()
+        # csv_field_val = csv_line[ruleDef.csv_index].lower()
+        csv_field_val = csv_line[ruleDef.get("csv_index")].lower()
 
         # values specified in the rule definition
-        vals = ruleDef.csv_value.split(";")
+        vals = ruleDef.get("csv_values").split(";")
 
         match = False
         for val in vals:
@@ -96,7 +97,7 @@ class Set_Accounts(Rule):
         if match:
             newPosting = [
                 Posting(
-                    account=ruleDef.account_from,
+                    account=ruleDef.get("from"),
                     units=None,
                     cost=None,
                     price=None,
@@ -104,7 +105,7 @@ class Set_Accounts(Rule):
                     meta=None,
                 ),
                 Posting(
-                    account=ruleDef.account_to,
+                    account=ruleDef.get("to"),
                     units=None,
                     cost=None,
                     price=None,
