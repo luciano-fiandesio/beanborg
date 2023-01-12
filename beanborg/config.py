@@ -143,7 +143,11 @@ def init_config(file, debug):
         sys.exit(-1)
 
     with open(file, "r") as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
+        try:
+            config = yaml.load(file, Loader=yaml.FullLoader)
+        except yaml.scanner.ScannerError as ex:
+            print("file: %s is malformed, please check" % (file.name))
+            sys.exit(-1)
 
     config.debug = debug
     return config

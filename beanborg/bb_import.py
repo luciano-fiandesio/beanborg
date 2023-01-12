@@ -9,7 +9,6 @@ from beanborg.importer import Importer
 
 
 def main():
-    # aaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaa       aaaaaaaa
     imp = Importer()
     imp.import_transactions()
 
