@@ -12,6 +12,7 @@ setup(
     url='https://github.com/luciano-fiandesio/beanborg',
     packages=find_packages(),
     install_requires=required,
+    include_package_data=True,
     entry_points={
         'console_scripts': [
         	'bb_mover=beanborg:bb_mover.main',
