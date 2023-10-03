@@ -6,7 +6,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='beanborg',
-    version='0.1',
+    #version='0.1',
     author='Luciano Fiandesio',
     author_email='luciano@fiandes.io',
     url='https://github.com/luciano-fiandesio/beanborg',
