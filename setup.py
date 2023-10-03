@@ -10,7 +10,7 @@ setup(
     author='Luciano Fiandesio',
     author_email='luciano@fiandes.io',
     url='https://github.com/luciano-fiandesio/beanborg',
-    packages=['beanborg'],
+    packages=['beanborg', 'beanborg.handlers', 'beanborg.rule_engine', 'beanborg.utils'],
     install_requires=required,
     entry_points={
         'console_scripts': [
