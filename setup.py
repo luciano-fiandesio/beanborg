@@ -7,7 +7,10 @@ with open('requirements.txt') as f:
 setup(
     name='beanborg',
     version='0.1',
-    packages=find_packages(),
+    author='Luciano Fiandesio',
+    author_email='luciano@fiandes.io',
+    url='https://github.com/luciano-fiandesio/beanborg',
+    packages=['beanborg'],
     install_requires=required,
     entry_points={
         'console_scripts': [
