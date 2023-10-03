@@ -13,11 +13,12 @@ setup(
     packages=find_packages(),
     install_requires=required,
     include_package_data=True,
-    entry_points={
-        'console_scripts': [
-        	'bb_mover=beanborg:bb_mover.main',
-        	'bb_archive=beanborg:bb_archive.main',
-        	'bb_import=beanborg:bb_import.main'
-        ],
-    }
+    scripts=['bin/bb_import']
+    # entry_points={
+    #     'console_scripts': [
+    #     	'bb_mover=beanborg:bb_mover.main',
+    #     	'bb_archive=beanborg:bb_archive.main',
+    #     	'bb_import=beanborg:bb_import.main'
+    #     ],
+    # }
 )
