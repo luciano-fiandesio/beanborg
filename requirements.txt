@@ -1,4 +1,4 @@
-beancount==2.3.3
+beancount>=2.3.3, <3.0.0
 pyyaml==6.0.1
 rich==13.6.0
 prompt-toolkit==3.0.39
