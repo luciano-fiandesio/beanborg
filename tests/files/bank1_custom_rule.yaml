@@ -21,7 +21,6 @@ indexes:
   
 rules:
   beancount_file: 'main1.ldg'
-  #rules_file: luciano.amex.rules
   account: '1234567'
   currency: GBP
   default_expense: 'Expense:Magic'

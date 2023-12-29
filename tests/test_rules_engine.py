@@ -27,6 +27,15 @@ def test_expense_replacement():
     tx = rule_engine.execute(entries)
     assert tx.postings[1].account == "Expenses:Groceries"
 
+def test_expense_replacement2():
+
+    rule_engine = make_rule_engine('tests/files/bank1_replace_expense2.yaml')
+    entries = "31.10.2019,b,auszahlung,books,x,ZZ03100400000608903100".split(
+        ","
+    )
+    tx = rule_engine.execute(entries)
+    assert tx.postings[1].account == "Expenses:Multimedia:Books"
+
 def test_ignore():
 
     rule_engine = make_rule_engine('tests/files/bank1_ignore_by_counterparty.yaml')
@@ -89,12 +98,11 @@ def test_no_rulefile():
 
 def make_rule_engine(config_file):
     config = init_config(config_file, False)
-    
     return RuleEngine(
         Context(
             ruleset=config.rules.ruleset,
             rules_dir="tests/files",
-            account=None,
+            account=config.rules.account,
             date_fomat="%d.%m.%Y",
             default_expense="Expenses:Unknown",
             date_pos=0,

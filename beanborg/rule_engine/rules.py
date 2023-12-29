@@ -183,7 +183,7 @@ class Replace_Expense(Rule):
     Categorizes a transaction by assigning the account extracted from a look-up table
     based on the 'payee_pos' index of a CSV file row.
 
-    The rule is based on the 'payee.rules' look-up file.
+    The rule is based on the 'account.rules' look-up file.
     """
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
@@ -199,6 +199,7 @@ class Replace_Expense(Rule):
             LookUpCache.init_decision_table("account", table),
             csv_line[self.context.payee_pos],
             self.context.default_expense,
+            self.context.account
         )
         if expense:
             posting = Posting(expense, None, None, None, None, None)
