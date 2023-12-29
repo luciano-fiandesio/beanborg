@@ -30,10 +30,6 @@ class RuleDef:
     def get(self, key):
         return self.attributes[key]
 
-
-
-
-
 class Rule_Init(Rule):
     def __init__(self, name, context):
         Rule.__init__(self, name, context)
@@ -79,7 +75,6 @@ class RuleEngine:
         return cr
 
     def __init__(self, ctx: Context):
-
         self._ctx = ctx
         self.rules = {}
 

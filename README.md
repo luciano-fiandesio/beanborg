@@ -70,7 +70,7 @@ The third stage is executed by the `bb_archive.py` script.
 
 ### Configuration
 
-Each financial institution from which data will be imported must have a dedicated YAML configuration file.
+Each financial statement from which data will be imported must have a dedicated YAML configuration file.
 The configuration file is used by the import scripts to determine the CSV file structure and other information, including which rules to apply.
 
 ### Structure of a configuration file
@@ -112,6 +112,8 @@ Note that the first index starts from `0`.
 | amount_in    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the index corresponding to the credited amount  |         |
 | narration    | The index corresponding to the narration or reference field of the transaction          |         |                                                                                   
 
+In the context of a financial transaction, a "counterparty" simply refers to the other party involved in the transaction. It can be an individual, a company, or any other entity that you are transacting with. For example, if you purchase groceries at a store, the store is the counterparty in that transaction. Similarly, if you receive a salary from your employer, the employer is the counterparty to that transaction.
+
 
 #### rules
 
@@ -146,7 +148,6 @@ indexes:
 
 rules:
   beancount_file: 'main-ledger.ldg'
-  rules_file: well-fargo.rules
   account: 565444499
   currency: USD
   ruleset:
@@ -198,18 +199,53 @@ Fresh Food Inc.;equals;FRESH FOOD
 
 #### Replace_Expense
 
-This rule is used to assign an Account to a transaction based on the value of the `counterparty` index of the CSV file. This rule requires a look-up file named `account.rules` located in the directory defined by the `rules.rules_folder` option of the config file.
+The `Replace_Expense` rule is designed to automatically assign a specific account to a Beancount transaction, based on the counterparty field in the CSV file. This rule simplifies the categorization of transactions by utilizing a look-up file, `account.rules`, which is located in the directory specified by the `rules.rules_folder` configuration.
 
-For example: we want to add this transaction to the ledger and we want to assign the Account `Expenses:Grocery` to the transaction.
+##### Example Usage
+
+- To assign `Expenses:Grocery` to transactions from "Fresh Food Inc.", add the following to your `account.rules` file:
 
 ```
-04.11.2020;04.11.2020;Direct Debit;"Fresh Food Inc.";-21,30;EUR;0000001;UK0000001444555
+Fresh Food Inc.;equals;Expenses:Groceries
 ```
+
 
 Add the `Replace_Expense` rule to the list of rules in the configuration file for the target financial institution and add this entry to the `account.rules` file:
 
 ```
 Fresh Food Inc.;equals;Expenses:Groceries
+```
+
+##### Advanced Categorization:
+
+- In scenarios where the same counterparty should be categorized differently based on the account (e.g., business vs. personal expenses), the rule can distinguish based on the `rules.account` property of the yaml configuration file.
+- For example, transactions with "Apple" in a business account could be categorized as "Expenses:Business:TaxClaim," while in a personal savings account as "Expenses:Gadgets".
+
+`account.rules`` File Example:
+
+```
+apple;contains_ic;Expenses:Gadgets
+apple;contains_ic;Expenses:Business:TaxClaim;biz
+```
+
+The value `biz` must match the value of the `rules.account` property from the financial statement Yaml configuration file.
+ 
+Configuration File Snippet:
+
+```
+--- !Config
+csv:
+ ...
+  
+indexes:
+  ...
+
+rules:
+  account: biz
+  currency: USD
+  ruleset:
+    - Replace_Asset
+    - Replace_Expense
 ```
 
 #### Replace_Asset

@@ -1,2 +1,5 @@
 value;expression;result
 freshfood;sw;Expenses:Groceries
+books;contains_ic;Expenses:John:Books
+books;contains_ic;Expenses:Multimedia:Books;visa
+

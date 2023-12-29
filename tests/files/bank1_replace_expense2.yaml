@@ -21,13 +21,10 @@ indexes:
   
 rules:
   beancount_file: 'main1.ldg'
-  account: '1234567'
+  account: 'visa'
   currency: GBP
   default_expense: 'Expense:Magic'
   force_negative: true
   invert_negative: true
   ruleset:
-    - name: Ignore_By_Payee
-      ignore_payee:
-        - alfa
-        - beta
+    - name: Replace_Expense
