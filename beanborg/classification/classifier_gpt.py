@@ -1,18 +1,18 @@
-from openai import OpenAI
-from rich.prompt import Confirm
-from beancount.parser.printer import format_entry
 import os
-import re
-from pathlib import Path
 import json
-from prompt_toolkit import prompt
-from prompt_toolkit.completion import FuzzyWordCompleter
-from beanborg.utils.journal_utils import JournalUtils
-from beancount.core.data import Posting
-from beanborg.utils.string_utils import StringUtils
-from string import Template
 import traceback
 import logging
+from string import Template
+from pathlib import Path
+from openai import OpenAI
+from rich.prompt import Confirm
+from prompt_toolkit import prompt
+from prompt_toolkit.completion import FuzzyWordCompleter
+from beancount.parser.printer import format_entry
+from beancount.core.data import Posting
+from beanborg.utils.journal_utils import JournalUtils
+from beanborg.utils.string_utils import StringUtils
+
 
 class Classifier:
 
@@ -35,7 +35,6 @@ class Classifier:
             raise ValueError("Unexpected type for prompt_folder. Expected tuple or string.")
 
     def classify(self, txs, args):
-        
         try:
             account_completer = FuzzyWordCompleter(JournalUtils().get_accounts(args.rules.bc_file))
 
@@ -58,9 +57,10 @@ class Classifier:
             return False
 
         return Confirm.ask(
-            f'\n[red]You have [bold]{num_uncategorized}[/bold] transactions without a category. Do you want to fix them now?[/red]'
+            f'\n[red]You have [bold]{num_uncategorized}[/bold] transactions without a category. '
+            f'Do you want to fix them now?[/red]'
         )
-    
+
     def generate_system_prompt(self, args):
         prompt_folder = self.get_prompt_folder(args.classifier.prompt_folder)
         prompt_folder_path = os.path.join(os.getcwd(), prompt_folder)
@@ -71,7 +71,7 @@ class Classifier:
 
         system_template = Template(self.system_prompt)
         return system_template.substitute(values)
-            
+
     def update_transactions(self, txs, args, json_array, account_completer):
         default_category = args.rules.default_expense
 
@@ -89,10 +89,9 @@ class Classifier:
                 default=guess
             )
 
-        posting = Posting(text, None, None, None, None, None)
-        new_postings = [tx.postings[0]] + [posting]
-        txs.getTransactions()[i] = tx._replace(postings=new_postings)
-
+            posting = Posting(text, None, None, None, None, None)
+            new_postings = [tx.postings[0]] + [posting]
+            txs.getTransactions()[i] = tx._replace(postings=new_postings)
 
     def get_category_by_id(self, transactions_dict, target_id):
         transactions_list = transactions_dict.get('transactions', [])
@@ -101,16 +100,15 @@ class Classifier:
                 return transaction['category']
         return None  # Return None if the transaction is not found
 
-
     def prepare(self, args, transactions):
         json_array = [
-            self.extract_transaction_info(transaction, args)
+            self.extract_transaction_info(transaction)
             for transaction in transactions
             if self.has_no_category(transaction, args)
         ]
         return json.dumps(json_array, indent=4)
-            
-    def extract_transaction_info(self, transaction, args):
+
+    def extract_transaction_info(self, transaction):
         transaction_id = transaction.meta["md5"]
         date = str(transaction.date)
         description = self.clean_description(transaction.payee)
@@ -139,10 +137,10 @@ class Classifier:
         with open(self.system_prompt_path, 'r') as file:
             system_prompt = file.read()
         return system_prompt
-    
+
     def read_file_content(self, path, file_name):
         file_path = os.path.join(path, file_name)
-        
+
         try:
             with open(file_path, 'r') as file:
                 content = file.read()
@@ -153,7 +151,6 @@ class Classifier:
         except IOError:
             print(f"An error occurred while reading the file '{file_path}'.")
             return None
-    
 
     def find_category(self, args, system_prompt, json_transactions):
         try:
@@ -189,4 +186,3 @@ class Classifier:
         except Exception as e:
             logging.error(f"Error occurred while finding category: {str(e)}")
             return []
-
