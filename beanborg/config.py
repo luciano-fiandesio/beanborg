@@ -77,11 +77,25 @@ class Csv:
         self.keep_original = keep_original
 
 
+class Classifier:
+    def __init__(
+        self,
+        use_classifier,
+        prompt_folder=None,
+        model=None
+    ):
+        self.use_classifier = use_classifier,
+        self.prompt_folder = prompt_folder,
+        self.model = model
+        
+
+
 class Config:
-    def __init__(self, csv, indexes, rules, debug=False):
+    def __init__(self, csv, indexes, rules, classifier, debug=False):
         self.csv = csv
         self.indexes = indexes
         self.rules = rules
+        self.classifier = classifier
         self.debug = debug
 
     def load(loader, node):
@@ -131,7 +145,14 @@ class Config:
             rls.get("advanced_duplicate_detection", True)
         )
 
-        return Config(csv, indexes, rules)
+        clf = values.get("classifier", dict())
+        classifier = Classifier(
+            clf.get("use_classifier", False),
+            clf.get("prompt_folder", "prompts"),
+            clf.get("model", "gpt-4")
+        )
+
+        return Config(csv, indexes, rules, classifier)
 
 
 def init_config(file, debug):

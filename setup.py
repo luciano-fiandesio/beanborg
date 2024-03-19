@@ -13,5 +13,9 @@ setup(
     packages=find_packages(),
     install_requires=required,
     include_package_data=True,
+    package_data={
+        
+        'prompts': ['classification/prompts/*'],  # Include all files in a specific folder
+    }
     scripts=['bin/bb_import', 'bin/bb_mover', 'bin/bb_archive']
 )
