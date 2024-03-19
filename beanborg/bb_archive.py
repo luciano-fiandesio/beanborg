@@ -13,6 +13,7 @@ from rich import print as rprint
 from beanborg.arg_parser import eval_args
 from beanborg.config import init_config
 
+
 def main():
 
     args = eval_args("Archives imported CVS file")
@@ -38,7 +39,8 @@ def main():
             try:
                 dates.append(
                     datetime.strptime(
-                        row[config.indexes.date].strip(), config.csv.date_format
+                        row[config.indexes.date].strip(),
+                        config.csv.date_format
                     )
                 )
             except Exception as ex:
@@ -59,6 +61,7 @@ def main():
 
     print(u"\u2713" + " removing temp folder")
     shutil.rmtree(config.csv.target)
+
 
 if __name__ == "__main__":
     main()

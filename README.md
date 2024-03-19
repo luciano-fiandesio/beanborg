@@ -94,6 +94,7 @@ Here are the list of options for the `csv` section:
 | target        | The folder name or path in which the CSV file is moved to during the first stage.    s                                                                                                            | tmp     |                     |
 | archive       | The folder name of path in which the CSV file is archived during the archive stage                                                                                                               | archive |                     |
 | post_move_script       | Path to a post-move script that is executed after the CSV file is moved into the work folder. The script must use a `shebang` (e.g. `#!/bin/bash`) in order to be executed.|  |`/home/tom/scripts/convert.sh` |
+| keep_original       | Keep the CSV file from the `download_path`. The default is to delete it after the move process. This option is only required by the `bb_mover` script.|`False`|`True` |
 
 #### indexes
 

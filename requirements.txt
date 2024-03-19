@@ -1,4 +1,6 @@
-beancount>=2.3.3, <3.0.0
+beancount>=2.3.5, <3.0.0
 pyyaml==6.0.1
 rich==13.6.0
 prompt-toolkit==3.0.39
+PyYAML==6.0.1
+openai>=1.14.1
