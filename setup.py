@@ -12,9 +12,7 @@ setup(
     url='https://github.com/luciano-fiandesio/beanborg',
     packages=find_packages(),
     install_requires=required,
+    package_data={'': ['classification/prompts/system.txt']},
     include_package_data=True,
-    data_files=[
-        ('classification/prompts', ['classification/prompts/*']),
-    ],
     scripts=['bin/bb_import', 'bin/bb_mover', 'bin/bb_archive']
 )
