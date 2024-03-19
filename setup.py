@@ -16,6 +16,6 @@ setup(
     package_data={
         
         'prompts': ['classification/prompts/*'],  # Include all files in a specific folder
-    }
+    },
     scripts=['bin/bb_import', 'bin/bb_mover', 'bin/bb_archive']
 )
