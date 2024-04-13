@@ -5,13 +5,13 @@ import sys
 from random import SystemRandom
 import traceback
 from dataclasses import dataclass
-from beanborg.arg_parser import eval_args
-from beanborg.config import init_config
+from datetime import datetime, timedelta
 from rich import print as rprint
 from rich.table import Table
-from datetime import datetime, timedelta
 from beancount.parser.printer import format_entry
 from beancount.core.data import Amount
+from beanborg.arg_parser import eval_args
+from beanborg.config import init_config
 from beanborg.handlers.amount_handler import AmountHandler
 from beanborg.rule_engine.Context import Context
 from beanborg.rule_engine.rules_engine import RuleEngine
@@ -63,7 +63,7 @@ class Importer:
         self.accounts = set()
         self.txs = Transactions({})
 
-    def gen_datetime(self, min_year=1900, max_year=datetime.now().year):
+    def generate_random_datetime(self, min_year=1900, max_year=datetime.now().year):
         """generate a datetime in format yyyy-mm-dd hh:mm:ss.000000"""
         start = datetime(min_year, 1, 1, 00, 00, 00)
         years = max_year - min_year + 1
@@ -162,7 +162,7 @@ class Importer:
         return account_tx
 
     def verify_accounts_count(self):
-        if len(self.accounts) > 1 and len(self.transactions) > 0:
+        if len(self.accounts) > 1 and len(self.txs.getTransactions()) > 0:
             rprint(
                 '[red]Expecting only one account in csv'
                 f'file, found: {str(len(self.accounts))}[/red]'
@@ -179,7 +179,7 @@ class Importer:
             tup = to_tuple(self.txs.getTransactions()[key])
             if hash_tuple(tup) in account_txs:
                 if print_duplication_warning(account_txs[hash_tuple(tup)]):
-                    pre_trans.append(self.txs[key])
+                    pre_trans.append(self.txs.getTransactions()[key])
             else:
                 pre_trans.append(self.txs.getTransactions()[key])
 
@@ -195,66 +195,78 @@ class Importer:
                 self.write_tx(exc, tx)
 
     def import_transactions(self):
-
         options = eval_args("Parse bank csv file and import into beancount")
         self.args = init_config(options.file, options.debug)
+        import_csv = self.get_import_csv_path()
+        self.validate_import_csv(import_csv)
+        rule_engine = self.init_rule_engine()
+        tx_hashes = JournalUtils().transaction_hashes(self.args.rules.bc_file)
+        self.process_csv_file(import_csv, rule_engine, tx_hashes)
+        self.post_process_transactions()
 
-        # transactions csv file to import
-        import_csv = os.path.join(
-            self.args.csv.target,
-            self.args.csv.ref + ".csv")
+    def get_import_csv_path(self):
+        return os.path.join(self.args.csv.target, self.args.csv.ref + ".csv")
 
+    def validate_import_csv(self, import_csv):
         if not os.path.isfile(import_csv):
             rprint("[red]file: %s does not exist![red]" % (import_csv))
             sys.exit(-1)
 
-        rule_engine = self.init_rule_engine()
-        tx_hashes = JournalUtils().transaction_hashes(self.args.rules.bc_file)
-
+    def process_csv_file(self, import_csv, rule_engine, tx_hashes):
         with open(import_csv) as csv_file:
-            csv_reader = csv.reader(
-                csv_file, delimiter=self.args.csv.separator)
-            for _ in range(self.args.csv.skip):
-                next(csv_reader)  # skip the line
+            csv_reader = csv.reader(csv_file, delimiter=self.args.csv.separator)
+            self.skip_csv_headers(csv_reader)
             for row in csv_reader:
-                self.stats.tx_in_file += 1
-                try:
-                    # calculate hash of csv row
-                    md5 = hash(row)
+                self.process_csv_row(row, rule_engine, tx_hashes)
 
-                    # keep track of the accounts for each tx:
-                    # the system expects one account per imported file
-                    res_account = self.get_account(row)
-                    if self.debug():
-                        print("resolved account: " + str(res_account))
-                    self.accounts.add(res_account)
+    def skip_csv_headers(self, csv_reader):
+        for _ in range(self.args.csv.skip):
+            next(csv_reader)
 
-                    if md5 not in tx_hashes:
-                        self.process_tx(row, md5, rule_engine)
-                    else:
-                        self.warn_hash_collision(row, md5)
+    def process_csv_row(self, row, rule_engine, tx_hashes):
+        self.stats.tx_in_file += 1
+        try:
+            md5 = hash(row)
+            res_account = self.get_account(row)
+            if self.debug():
+                print("resolved account: " + str(res_account))
+            self.accounts.add(res_account)
+            if md5 not in tx_hashes:
+                self.process_tx(row, md5, rule_engine)
+            else:
+                self.warn_hash_collision(row, md5)
+        except Exception as e:
+            print("error: " + str(e))
+            self.log_error(row)
+            self.stats.error += 1
+            if self.debug():
+                traceback.print_exc()
 
-                except Exception as e:
-                    print("error: " + str(e))
-                    self.log_error(row)
-                    self.stats.error += 1
-                    if self.debug():
-                        traceback.print_exc()
-
+    def post_process_transactions(self):
         self.verify_accounts_count()
-        working_account = self.accounts.pop()
+        working_account = self.get_working_account()
         filtered_txs = self.verify_unique_transactions(working_account)
-
         self.stats.skipped_by_user = self.txs.count() - filtered_txs.count()
         self.stats.processed = filtered_txs.count()
-
-        if self.args.classifier.use_classifier and filtered_txs.count_no_category(self.args.rules.default_expense) > 0:
+        if self.should_classify_transactions(filtered_txs):
             Classifier().classify(filtered_txs, self.args)
-
-        # write transactions to file
-        account_file = working_account + ".ldg"
-        self.write_to_ledger(account_file, filtered_txs.getTransactions())
+        self.write_transactions_to_ledger(working_account, filtered_txs)
         self.print_summary()
+
+    def get_working_account(self):
+        if not self.accounts:
+            raise Exception("No accounts found in the CSV file.")
+        return self.accounts.pop()
+
+    def should_classify_transactions(self, filtered_txs):
+        return (
+            self.args.classifier.use_classifier
+            and filtered_txs.count_no_category(self.args.rules.default_expense) > 0
+        )
+
+    def write_transactions_to_ledger(self, account, transactions):
+        account_file = account + ".ldg"
+        self.write_to_ledger(account_file, transactions.getTransactions())
 
     def validate(self, tx):
         """
@@ -305,25 +317,103 @@ class Importer:
         return tx
 
     def process_tx(self, row, md5, rule_engine):
+        """
+        Process a transaction from a CSV row using the provided rule engine.
 
+        Args:
+            row (list): A list representing a row from the CSV file.
+            md5 (str): The MD5 hash of the CSV row.
+            rule_engine (RuleEngine): An instance of the RuleEngine class.
+
+        Returns:
+            None
+        """
         tx = rule_engine.execute(row)
 
-        if tx:
-            # check if the a category is assigned
-            if tx.postings[1].account == self.args.rules.default_expense:
-                self.stats.no_category += 1
-
-            tx_date = datetime.strptime(
-                row[self.args.indexes.date].strip(), self.args.csv.date_format
-            )
-
-            tx = self.validate(self.enrich(row, tx, tx_date, md5))
-
-            # generate a key based on:
-            # - the tx date
-            # - a random time (tx time is not important, but date is!)
-            key = str(tx_date) + str(self.gen_datetime().time())
-            self.txs.getTransactions()[key] = tx
-
-        else:
+        if not tx:
+            # If no transaction is returned by the rule engine,
+            # increment the ignored_by_rule counter and return early
             self.stats.ignored_by_rule += 1
+            return
+
+        # Update the no_category counter if applicable
+        self.update_no_category_stats(tx)
+
+        # Parse the transaction date from the CSV row
+        tx_date = self.parse_tx_date(row)
+
+        # Validate and enrich the transaction
+        tx = self.validate_and_enrich_tx(row, tx, tx_date, md5)
+
+        # Store the processed transaction in the txs dictionary
+        self.store_transaction(tx, tx_date)
+
+    def update_no_category_stats(self, tx):
+        """
+        Update the no_category counter if the transaction lacks a proper category.
+
+        Args:
+            tx (Transaction): The transaction object.
+
+        Returns:
+            None
+        """
+        if tx.postings[1].account == self.args.rules.default_expense:
+            self.stats.no_category += 1
+
+    def parse_tx_date(self, row):
+        """
+        Parse the transaction date from the CSV row.
+
+        Args:
+            row (list): A list representing a row from the CSV file.
+
+        Returns:
+            datetime: The parsed transaction date.
+        """
+        return datetime.strptime(
+            row[self.args.indexes.date].strip(), self.args.csv.date_format
+        )
+
+    def validate_and_enrich_tx(self, row, tx, tx_date, md5):
+        """
+        Validate and enrich the transaction with additional data from the CSV row.
+
+        Args:
+            row (list): A list representing a row from the CSV file.
+            tx (Transaction): The transaction object.
+            tx_date (datetime): The parsed transaction date.
+            md5 (str): The MD5 hash of the CSV row.
+
+        Returns:
+            Transaction: The validated and enriched transaction.
+        """
+        tx = self.validate(tx)
+        tx = self.enrich(row, tx, tx_date, md5)
+        return tx
+
+    def store_transaction(self, tx, tx_date):
+        """
+        Store the processed transaction in the txs dictionary.
+
+        Args:
+            tx (Transaction): The processed transaction object.
+            tx_date (datetime): The parsed transaction date.
+
+        Returns:
+            None
+        """
+        key = self.generate_tx_key(tx_date)
+        self.txs.getTransactions()[key] = tx
+
+    def generate_tx_key(self, tx_date):
+        """
+        Generate a unique key for the transaction based on the date and a random time.
+
+        Args:
+            tx_date (datetime): The parsed transaction date.
+
+        Returns:
+            str: The generated transaction key.
+        """
+        return str(tx_date) + str(self.generate_random_datetime().time())
