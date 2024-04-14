@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import fnmatch
 import os
 import sys
-from .Context import Context
+
 from beancount.core.data import Posting
+
+from .Context import Context
 from .decision_tables import init_decision_table, resolve_from_decision_table
 
 
@@ -40,15 +43,18 @@ class Rule:
 
     def checkAccountFromTo(self, ruleDef):
         if ruleDef.get("from") is None or ruleDef.get("to") is None:
-            raise Exception("Account from and to required for rule: {rule}"
-                            .format(rule=ruleDef.rule.__name__))
+            raise Exception(
+                "Account from and to required for rule: {rule}".format(
+                    rule=ruleDef.rule.__name__
+                )
+            )
 
     def failIfAttributeMissing(self, ruleDef, attributeName):
         if ruleDef.get(attributeName) is None:
             raise Exception(
-                "Attribute {attribute_name} required for rule: {rule} "
-                .format(attribute_name=attributeName,
-                        rule=ruleDef.rule.__name__)
+                "Attribute {attribute_name} required for rule: {rule} ".format(
+                    attribute_name=attributeName, rule=ruleDef.rule.__name__
+                )
             )
 
 
@@ -84,15 +90,17 @@ class Set_Accounts(Rule):
 
         # current value at index for the current row
         # csv_field_val = csv_line[ruleDef.csv_index].lower()
-        csv_field_val = csv_line[ruleDef.get("csv_index")].lower()
+        csv_field_val = csv_line[ruleDef.get("csv_index")].lower().strip()
 
         # values specified in the rule definition
         vals = ruleDef.get("csv_values").split(";")
 
         match = False
         for val in vals:
-            if val.lower() in csv_field_val:
+            # Use fnmatch to allow wildcard matching
+            if fnmatch.fnmatch(csv_field_val, val.lower().strip()):
                 match = True
+                break
 
         if match:
             newPosting = [
@@ -131,11 +139,13 @@ class Replace_Payee(Rule):
         Rule.__init__(self, name, context)
 
     def execute(self, csv_line, tx, ruleDef=None):
-        table = os.path.join(self.context.rules_dir, 'payee.rules')
+        table = os.path.join(self.context.rules_dir, "payee.rules")
         if not os.path.isfile(table):
             print(
                 "file: %s does not exist! - The 'Replace_Payee' rules \
-                    requires the payee.rules file." % (table))
+                    requires the payee.rules file."
+                % (table)
+            )
             sys.exit(-1)
 
         return (
@@ -169,7 +179,7 @@ class Replace_Asset(Rule):
     def execute(self, csv_line, tx=None, ruleDef=None):
 
         asset = None
-        table = os.path.join(self.context.rules_dir, 'asset.rules')
+        table = os.path.join(self.context.rules_dir, "asset.rules")
         if self.context.force_account:
             asset = self.context.force_account
         else:
@@ -177,15 +187,19 @@ class Replace_Asset(Rule):
                 print(
                     "file: %s does not exist! - \
                         The 'Replace_Asset' rules requires the asset.rules \
-                            file." % (table))
+                            file."
+                    % (table)
+                )
                 sys.exit(-1)
 
             asset = resolve_from_decision_table(
                 LookUpCache.init_decision_table("asset", table),
-                self.context.account
-                if self.context.account is not None
-                else csv_line[self.context.account_pos],
-                "Assets:Unknown"
+                (
+                    self.context.account
+                    if self.context.account is not None
+                    else csv_line[self.context.account_pos]
+                ),
+                "Assets:Unknown",
             )
 
         if asset:
@@ -209,11 +223,14 @@ class Replace_Expense(Rule):
         Rule.__init__(self, name, context)
 
     def execute(self, csv_line, tx=None, ruleDef=None):
-        table = os.path.join(self.context.rules_dir, 'account.rules')
+        table = os.path.join(self.context.rules_dir, "account.rules")
 
         if not os.path.isfile(table):
-            print("file: % s does not exist! - The 'Replace_Expense' rules \
-                  requires the account.rules file." % (table))
+            print(
+                "file: % s does not exist! - The 'Replace_Expense' rules \
+                  requires the account.rules file."
+                % (table)
+            )
             sys.exit(-1)
 
         expense = resolve_from_decision_table(
@@ -237,8 +254,7 @@ class Ignore_By_Payee(Rule):
 
         self.failIfAttributeMissing(ruleDef, "ignore_payee")
         for ignorablePayee in ruleDef.get("ignore_payee"):
-            if ignorablePayee.lower() in \
-                    csv_line[self.context.payee_pos].lower():
+            if ignorablePayee.lower() in csv_line[self.context.payee_pos].lower():
                 return (True, None)
 
         return (False, tx)
@@ -277,7 +293,7 @@ class Ignore_By_StringAtPos(Rule):
             pos = int(ignorable.split(";")[1])
             strToIgnore = ignorable.split(";")[0]
 
-            if strToIgnore.lower() == csv_line[pos].lower():
+            if strToIgnore.lower().strip() == csv_line[pos].lower().strip():
                 return (True, None)
 
         return (False, tx)

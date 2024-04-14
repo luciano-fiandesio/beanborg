@@ -272,23 +272,23 @@ This is how the `Set_Accounts` rule can help:
 
 ```
 - name: Set_Accounts
-      from: Assets:Jim:Current
-      to: Assets:Jim:Cash
-      csv_index: 2
-      csv_values: Cash Withdrawal
+  from: Assets:Jim:Current
+  to: Assets:Jim:Cash
+  csv_index: 2
+  csv_values: Cash Withdrawal
 ```
 
 With the above rule configuration, we are pointing the rule to the index `2` (remember index count starts at `0`) and if the value of the index matches `Cash Withdrawal`,
 then the origin and destination accounts are set on the Beancount transaction. This rule supports multiple `csv_values`, separated by `;`. If any of the values matches, the rule is applied:
 
-The CSV values are **case-insensitive**.
+The CSV values are **case-insensitive** and support wildcard matching using `fnmatch`.
 
 ```
 - name: Set_Accounts
       from: Assets:Jim:Current
       to: Assets:Jim:Cash
       csv_index: 2
-      csv_values: Cash Withdrawal;Retiro de efectivo;Ritiro contanti
+      csv_values: Cash Withdrawal;*Retiro*;*Ritiro*
 ```
 
 #### Ignore_By_Payee
