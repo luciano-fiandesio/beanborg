@@ -3,7 +3,7 @@ import sys
 import yaml
 
 
-class Rules(object):
+class Rules:
     def __init__(
         self,
         bc_file=None,
@@ -29,7 +29,7 @@ class Rules(object):
         self.advanced_duplicate_detection = advanced_duplicate_detection
 
 
-class Indexes(object):
+class Indexes:
     def __init__(
         self,
         date=None,
@@ -51,7 +51,7 @@ class Indexes(object):
         self.narration = narration
 
 
-class Csv(object):
+class Csv:
     def __init__(
         self,
         download_path,
@@ -63,6 +63,7 @@ class Csv(object):
         target=None,
         archive=None,
         post_script_path=None,
+        keep_original=None,
     ):
         self.download_path = download_path
         self.name = name
@@ -73,9 +74,10 @@ class Csv(object):
         self.target = target
         self.archive = archive
         self.post_script_path = post_script_path
+        self.keep_original = keep_original
 
 
-class Config(object):
+class Config:
     def __init__(self, csv, indexes, rules, debug=False):
         self.csv = csv
         self.indexes = indexes
@@ -97,6 +99,8 @@ class Config(object):
             csv_data.get("target", "tmp"),
             csv_data.get("archive_path", "archive"),
             csv_data.get("post_move_script"),
+            csv_data.get("keep_original", False)
+
         )
 
         idx = values.get("indexes", dict())
@@ -139,7 +143,11 @@ def init_config(file, debug):
         sys.exit(-1)
 
     with open(file, "r") as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
+        try:
+            config = yaml.load(file, Loader=yaml.FullLoader)
+        except yaml.scanner.ScannerError as ex:
+            print("file: %s is malformed, please check" % (file.name))
+            sys.exit(-1)
 
     config.debug = debug
     return config
