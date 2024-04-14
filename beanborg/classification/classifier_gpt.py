@@ -153,6 +153,10 @@ class Classifier:
             return None
 
     def find_category(self, args, system_prompt, json_transactions):
+        
+        print("System prompt: ", system_prompt)
+        print("Transactions: ", json_transactions)
+        
         try:
             client = OpenAI()
             response = client.chat.completions.create(
@@ -173,7 +177,9 @@ class Classifier:
 
             if response.choices and response.choices[0].message:
                 array_response = response.choices[0].message.content
+                
                 try:
+                    print("Array response: ", array_response)
                     return json.loads(array_response)
                 except json.JSONDecodeError as e:
                     logging.error(f"Error parsing JSON response: {str(e)}")
