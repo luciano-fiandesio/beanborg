@@ -22,7 +22,7 @@ from beanborg.utils.duplicate_detector import (
     to_tuple,
     print_duplication_warning,
 )
-from beanborg.classification.classifier_gpt import Classifier
+from beanborg.classification.classifier import Classifier
 from beanborg.model.transactions import Transactions
 from beanborg.utils.journal_utils import JournalUtils
 
