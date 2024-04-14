@@ -11,7 +11,8 @@ class Context:
     rules_dir: str
     # the date format used in the CSV file
     date_fomat: str
-    # the default account (Expense) to use for a the second "leg" of a transaction 
+    # the default account (Expense) to use for a the second "leg" of a
+    # transaction
     default_expense: str
     # the index of the date field in the csv file
     date_pos: int
@@ -23,8 +24,8 @@ class Context:
     account_pos: int
     # the index of the narration field in the csv file
     narration_pos: int
-    # if the CSV file has no account id, use "account" to lookup the Account Origin
-    # when using the Replace_Asset rule
+    # if the CSV file has no account id, use "account" to lookup the Account
+    # Origin when using the Replace_Asset rule
     account: str
     # Force the Account Origin to the value specifed
     force_account: str

@@ -3,7 +3,7 @@ import sys
 import yaml
 
 
-class Rules(object):
+class Rules:
     def __init__(
         self,
         bc_file=None,
@@ -29,7 +29,7 @@ class Rules(object):
         self.advanced_duplicate_detection = advanced_duplicate_detection
 
 
-class Indexes(object):
+class Indexes:
     def __init__(
         self,
         date=None,
@@ -51,7 +51,7 @@ class Indexes(object):
         self.narration = narration
 
 
-class Csv(object):
+class Csv:
     def __init__(
         self,
         download_path,
@@ -63,6 +63,7 @@ class Csv(object):
         target=None,
         archive=None,
         post_script_path=None,
+        keep_original=None,
     ):
         self.download_path = download_path
         self.name = name
@@ -73,13 +74,28 @@ class Csv(object):
         self.target = target
         self.archive = archive
         self.post_script_path = post_script_path
+        self.keep_original = keep_original
 
 
-class Config(object):
-    def __init__(self, csv, indexes, rules, debug=False):
+class Classifier:
+    def __init__(
+        self,
+        use_classifier,
+        prompt_folder=None,
+        model=None
+    ):
+        self.use_classifier = use_classifier,
+        self.prompt_folder = prompt_folder,
+        self.model = model
+        
+
+
+class Config:
+    def __init__(self, csv, indexes, rules, classifier, debug=False):
         self.csv = csv
         self.indexes = indexes
         self.rules = rules
+        self.classifier = classifier
         self.debug = debug
 
     def load(loader, node):
@@ -97,6 +113,8 @@ class Config(object):
             csv_data.get("target", "tmp"),
             csv_data.get("archive_path", "archive"),
             csv_data.get("post_move_script"),
+            csv_data.get("keep_original", False)
+
         )
 
         idx = values.get("indexes", dict())
@@ -127,7 +145,14 @@ class Config(object):
             rls.get("advanced_duplicate_detection", True)
         )
 
-        return Config(csv, indexes, rules)
+        clf = values.get("classifier", dict())
+        classifier = Classifier(
+            clf.get("use_classifier", False),
+            clf.get("prompt_folder", "prompts"),
+            clf.get("model", "gpt-4")
+        )
+
+        return Config(csv, indexes, rules, classifier)
 
 
 def init_config(file, debug):
@@ -139,7 +164,11 @@ def init_config(file, debug):
         sys.exit(-1)
 
     with open(file, "r") as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
+        try:
+            config = yaml.load(file, Loader=yaml.FullLoader)
+        except yaml.scanner.ScannerError as ex:
+            print("file: %s is malformed, please check" % (file.name))
+            sys.exit(-1)
 
     config.debug = debug
     return config
