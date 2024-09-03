@@ -200,9 +200,7 @@ class Importer:
         self.args = init_config(options.file, options.debug)
 
         # transactions csv file to import
-        import_csv = os.path.join(
-            self.args.csv.target,
-            self.args.csv.ref + ".csv")
+        import_csv = os.path.join(self.args.csv.target, f"{self.args.csv.ref}.csv")
 
         if not os.path.isfile(import_csv):
             rprint("[red]file: %s does not exist![red]" % (import_csv))
@@ -249,7 +247,7 @@ class Importer:
         self.stats.processed = filtered_txs.count()
 
         if filtered_txs.count_no_category(self.args.rules.default_expense) > 0:
-            Classifier().classify(filtered_txs, self.args)
+            Classifier(self.args.rules.training_data).classify(filtered_txs, self.args)
 
         # write transactions to file
         account_file = working_account + ".ldg"

@@ -15,7 +15,8 @@ class Rules:
         invert_negative=None,
         origin_account=None,
         ruleset=[],
-        advanced_duplicate_detection=None
+        advanced_duplicate_detection=None,
+        training_data=None
     ):
         self.bc_file = bc_file
         self.rules_folder = rules_folder
@@ -27,6 +28,7 @@ class Rules:
         self.origin_account = origin_account
         self.ruleset = ruleset
         self.advanced_duplicate_detection = advanced_duplicate_detection
+        self.training_data = training_data
 
 
 class Indexes:
@@ -128,7 +130,8 @@ class Config:
             rls.get("invert_negative", False),
             rls.get("origin_account", None),
             rls.get("ruleset", []),
-            rls.get("advanced_duplicate_detection", True)
+            rls.get("advanced_duplicate_detection", True),
+            rls.get("training_data", "training_data.csv")
         )
 
         return Config(csv, indexes, rules)
