@@ -26,6 +26,12 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completion
+from rich.panel import Panel
+from rich.layout import Layout
+from rich import box
+from rich.live import Live
+from rich.text import Text
+import time
 
 # https://matt.sh/python-project-structure-2024
 class Classifier:
@@ -143,10 +149,42 @@ class Classifier:
     def get_day_of_week(self, date):
         return pd.to_datetime(date).dayofweek
 
-    def classify(self, txs, args):
 
+    def display_transaction(self, tx, top_labels, top_probs, chatgpt4_prediction):
+        console = Console()
+        console.clear()
+
+        # Transaction panel
+        tx_panel = Panel(
+            format_entry(tx),
+            title="Transaction",
+            width=80,
+            expand=False,
+            border_style="cyan",
+            box=box.ROUNDED
+        )
+
+        # Predictions panel
+        predictions_content = ["Top 3 predictions:"]
+        for i, (label, prob) in enumerate(zip(top_labels, top_probs), 1):
+            predictions_content.append(f"[bold cyan]{i}.[/] [cyan]{label}[/] ({prob:.2f})")
+        predictions_content.append(f"[bold cyan]4.[/] ChatGPT-4: [cyan]{chatgpt4_prediction}[/]")
+    
+        pred_panel = Panel(
+            "\n".join(predictions_content),
+            title="Predictions",
+            width=80,
+            expand=False,
+            border_style="magenta",
+            box=box.ROUNDED
+        )
         
-        # self.classifier.show_informative_features(20)
+        # Print panels
+        console.print(tx_panel)
+        console.print(pred_panel)
+        console.print("Select a number to choose a prediction (or 'q' to quit):", style="bold yellow")
+        
+    def classify(self, txs, args):
 
         if Confirm.ask(
                 f'\n[red]you have \
@@ -168,91 +206,80 @@ class Classifier:
                         self.model, self.label_encoder.classes_, stripped_text, day_of_month, day_of_week
                     )
 
-                    # Initialize rich console
-                    console = Console()
-                    
-                    console.rule()
-                    console.print(format_entry(tx))
-                    console.rule()
-                    # Print predictions with numbers using rich formatting
-                    console.print("Top 3 predictions:", style="bold")
-                    for i, (label, prob) in enumerate(zip(top_labels, top_probs), 1):
-                        console.print(f"[bold cyan]{i}.[/] Label: [bold cyan]{label}[/], Probability: [bold cyan]{prob:.4f}[/]")
+                    while True:
+                        self.display_transaction(tx, top_labels, top_probs, chatgpt4_prediction)
 
-                    console.print(f"[bold cyan]4.[/] ChatGPT-4 Prediction: [bold cyan]{chatgpt4_prediction}[/]")
-
-                    # Prompt user to select a prediction
-                    selected_number = input("Select a number to choose a prediction: ")
-                    
-                    if selected_number.isdigit():
-                        selected_number = int(selected_number)
-                        if selected_number == 4:
-                            selected_prediction = chatgpt4_prediction
-                        elif 1 <= selected_number <= 3:
-                            selected_prediction = top_labels[selected_number - 1]
-                        else:
-                            selected_prediction = None
-                        if selected_prediction:
-                            console.print(f"Selected prediction: [bold]{selected_prediction}[/bold]", style="bold green")
+                        selected_number = input("Enter your selection (or 'q' to quit): ")
+                        if selected_number.lower() == 'q':
+                            return  # Exit the function if user wants to quit
+                        if selected_number.isdigit():
+                            selected_number = int(selected_number)
+                            if selected_number == 4:
+                                selected_prediction = chatgpt4_prediction
+                            elif 1 <= selected_number <= 3:
+                                selected_prediction = top_labels[selected_number - 1]
+                            else:
+                                selected_prediction = None
                             
-                    else:
-                        account_completer = CustomFuzzyWordCompleter(
-                            JournalUtils().get_accounts(args.rules.bc_file))                        
+                            if selected_prediction:
+                                text = selected_prediction
+                            else:
+                                text = guess
+                        else:
+                            account_completer = CustomFuzzyWordCompleter(
+                                JournalUtils().get_accounts(args.rules.bc_file))                        
                       
-                        # Create custom key bindings
-                        kb = KeyBindings()
+                            # Create custom key bindings
+                            kb = KeyBindings()
 
-                        @kb.add(Keys.Backspace)
-                        def _(event):
-                            """
-                            When backspace is pressed, delete the character and then
-                            run auto-completion.
-                            """
-                            # Delete the character behind the cursor
-                            event.current_buffer.delete_before_cursor(count=1)
+                            @kb.add(Keys.Backspace)
+                            def _(event):
+                                """
+                                When backspace is pressed, delete the character and then
+                                run auto-completion.
+                                """
+                                # Delete the character behind the cursor
+                                event.current_buffer.delete_before_cursor(count=1)
+                                
+                                # Run auto-completion
+                                event.current_buffer.start_completion(select_first=False)
                             
-                            # Run auto-completion
-                            event.current_buffer.start_completion(select_first=False)
-                        
-                        text = prompt(
-                            'Enter account: ',
-                            completer=account_completer,
-                            complete_while_typing=True,
-                            key_bindings=kb,
-                            default=guess)
-                        
-                        if text != guess and text != args.rules.default_expense:
-                            # guess was wrong, add to training set and update model
-                            just_numbers = re.sub(
-                                "[^0-9\\.-]", "", str(tx.postings[0].units))
-                            df = pd.DataFrame(
-                                {"date": tx.date,
-                                "desc": StringUtils.strip_digits(
-                                    tx.payee.upper()),
-                                "amount": just_numbers,
-                                "cat": [text]
-                                })
-                            df = df.astype(
-                                {"desc": str, "date": str, "amount": float})
-                            # TODO self.classifier.update([(stripped_text, text)])
-                            # save training data
-                            df.to_csv(self.trainingDataFile, mode='a',
-                                    header=False, index=False)
-                        else:
-                            self.classifier.update([(stripped_text, guess)])
-                    # show the transaction on screen
-                    #print(format_entry(tx))
-                    # text = prompt(
-                    #     'Enter account: ',
-                    #     completer=account_completer,
-                    #     complete_while_typing=True,
-                    #     default=guess)
+                            text = prompt(
+                                'Enter account: ',
+                                completer=account_completer,
+                                complete_while_typing=True,
+                                key_bindings=kb,
+                                default=guess)
+                            
+                            if text != guess and text != args.rules.default_expense:
+                                # guess was wrong, add to training set and update model
+                                just_numbers = re.sub(
+                                    "[^0-9\\.-]", "", str(tx.postings[0].units))
+                                df = pd.DataFrame(
+                                    {"date": tx.date,
+                                    "desc": StringUtils.strip_digits(
+                                        tx.payee.upper()),
+                                    "amount": just_numbers,
+                                    "cat": [text]
+                                    })
+                                df = df.astype(
+                                    {"desc": str, "date": str, "amount": float})
+                                # TODO self.classifier.update([(stripped_text, text)])
+                                # save training data
+                                df.to_csv(self.trainingDataFile, mode='a',
+                                        header=False, index=False)
+                            else:
+                                self.classifier.update([(stripped_text, guess)])
+                   
 
-                    posting = Posting(text, None, None, None, None, None)
-                    new_postings = [tx.postings[0]] + [posting]
-                    txs.getTransactions()[i] = tx._replace(
-                        postings=new_postings)
-
+                        posting = Posting(text, None, None, None, None, None)
+                        new_postings = [tx.postings[0]] + [posting]
+                        txs.getTransactions()[i] = tx._replace(
+                            postings=new_postings)
+                        
+                        break  # Break the loop to move to the next transaction after successful classification
+    
+    
     def _get_training(self, df):
         """Get training data for the classifier, consisting of tuples of
         (text, category)"""
