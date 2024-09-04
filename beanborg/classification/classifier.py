@@ -83,10 +83,8 @@ class Classifier:
         # Fit the model
         self.model.fit(X, y_encoded)
 
-
     def has_no_category(self, tx, args) -> bool:
         return tx.postings[1].account == args.rules.default_expense
-
 
     def get_top_n_predictions(self, model, labels, text, day_of_month, day_of_week, n=3):
         # Create a DataFrame for the input text with the same structure as the training data
