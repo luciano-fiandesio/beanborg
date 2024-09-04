@@ -91,39 +91,6 @@ class Classifier:
     def get_day_of_week(self, date):
         return pd.to_datetime(date).dayofweek
 
-
-    def display_transaction(self, tx, top_labels, top_probs, chatgpt4_prediction):
-        console = Console()
-        console.clear()
-
-        # Transaction panel
-        tx_panel = Panel(
-            format_entry(tx),
-            title="Transaction",
-            width=80,
-            expand=False,
-            border_style="cyan",
-            box=box.ROUNDED
-        )
-
-        # Predictions panel
-        predictions_content = ["Top 3 predictions:"]
-        for i, (label, prob) in enumerate(zip(top_labels, top_probs), 1):
-            predictions_content.append(f"[bold cyan]{i}.[/] [cyan]{label}[/] ({prob:.2f})")
-        predictions_content.append(f"[bold cyan]4.[/] ChatGPT-4: [cyan]{chatgpt4_prediction}[/]")
-    
-        pred_panel = Panel(
-            "\n".join(predictions_content),
-            title="Predictions",
-            width=80,
-            expand=False,
-            border_style="magenta",
-            box=box.ROUNDED
-        )
-        
-        # Print panels
-        console.print(tx_panel)
-        console.print(pred_panel)
         
     def classify(self, txs, args):
 
