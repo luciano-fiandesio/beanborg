@@ -60,20 +60,11 @@ class Classifier:
 
         self.model = self.build_model()
         self.model.fit(X, y_encoded)
-        # if os.path.exists(data):
-        #     self.prev_data = pd.read_csv(self.trainingDataFile,
-        #                                  dtype={'amount': 'float64'})
-        # else:
-        #     self.prev_data = pd.DataFrame(
-        #         columns=['date', 'desc', 'amount', 'cat'])
-
-        # self.classifier = NaiveBayesClassifier(
-        #     self._get_training(self.prev_data))
+       
 
     def has_no_category(self, tx, args) -> bool:
 
         return tx.postings[1].account == args.rules.default_expense
-    
     
     
     def build_model(self):
@@ -182,7 +173,6 @@ class Classifier:
         # Print panels
         console.print(tx_panel)
         console.print(pred_panel)
-        console.print("Select a number to choose a prediction (or 'q' to quit):", style="bold yellow")
         
     def classify(self, txs, args):
 
@@ -251,25 +241,25 @@ class Classifier:
                                 key_bindings=kb,
                                 default=guess)
                             
-                            if text != guess and text != args.rules.default_expense:
-                                # guess was wrong, add to training set and update model
-                                just_numbers = re.sub(
-                                    "[^0-9\\.-]", "", str(tx.postings[0].units))
-                                df = pd.DataFrame(
-                                    {"date": tx.date,
-                                    "desc": StringUtils.strip_digits(
-                                        tx.payee.upper()),
-                                    "amount": just_numbers,
-                                    "cat": [text]
-                                    })
-                                df = df.astype(
-                                    {"desc": str, "date": str, "amount": float})
-                                # TODO self.classifier.update([(stripped_text, text)])
-                                # save training data
-                                df.to_csv(self.trainingDataFile, mode='a',
-                                        header=False, index=False)
-                            else:
-                                self.classifier.update([(stripped_text, guess)])
+                            # if text != guess and text != args.rules.default_expense:
+                            #     # guess was wrong, add to training set and update model
+                            #     just_numbers = re.sub(
+                            #         "[^0-9\\.-]", "", str(tx.postings[0].units))
+                            #     df = pd.DataFrame(
+                            #         {"date": tx.date,
+                            #         "desc": StringUtils.strip_digits(
+                            #             tx.payee.upper()),
+                            #         "amount": just_numbers,
+                            #         "cat": [text]
+                            #         })
+                            #     df = df.astype(
+                            #         {"desc": str, "date": str, "amount": float})
+                            #     self.classifier.update([(stripped_text, text)])
+                            #     # save training data
+                            #     df.to_csv(self.trainingDataFile, mode='a',
+                            #             header=False, index=False)
+                            # else:
+                            #     self.classifier.update([(stripped_text, guess)])
                    
 
                         posting = Posting(text, None, None, None, None, None)
