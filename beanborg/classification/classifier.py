@@ -17,7 +17,6 @@ from prompt_toolkit.completion import FuzzyWordCompleter
 from beanborg.classification.custom_fuzzy_wordf_completer import CustomFuzzyWordCompleter
 from beanborg.classification.data_loader import DataLoader
 from beanborg.classification.gpt_service import GPTService
-from beanborg.classification.model_builder import ModelBuilder
 from beanborg.classification.ui_service import UIService
 from beanborg.utils.journal_utils import JournalUtils
 from beancount.core.data import Posting
