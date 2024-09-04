@@ -37,7 +37,6 @@ from rich.text import Text
 
 # https://matt.sh/python-project-structure-2024
 class Classifier:
-
     
     def __init__(self, data="tmp/training_data.csv"):
         self.trainingDataFile = data
@@ -91,131 +90,97 @@ class Classifier:
     def get_day_of_week(self, date):
         return pd.to_datetime(date).dayofweek
 
-        
+    def confirm_classification(self, txs, args):
+        return Confirm.ask(
+            f'\n[red]You have [bold]{txs.count_no_category(args.rules.default_expense)}[/bold] '
+            f'transactions without category, do you want to fix them now?[/red]'
+        )
+
+    def process_transaction(self, tx, index, txs, args):
+        stripped_text = StringUtils.strip_digits(tx.payee.upper())
+        day_of_month = self.get_day_of_month(tx.date)
+        day_of_week = self.get_day_of_week(tx.date)
+
+        top_labels, top_probs, chatgpt_prediction = self.get_predictions(stripped_text, day_of_month, day_of_week)
+        self.ui_service.display_transaction(tx, top_labels, top_probs, chatgpt_prediction)
+
+        selected_category = self.get_user_selection(top_labels, chatgpt_prediction, args)
+
+        if selected_category:
+            self.update_transaction(tx, index, txs, selected_category)
+
+    def get_predictions(self, text, day_of_month, day_of_week):
+        return self.get_top_n_predictions(
+            self.model, self.label_encoder.classes_, text, day_of_month, day_of_week
+        )
+
+    def get_user_selection(self, top_labels, chatgpt_prediction, args):
+        while True:
+            selected_number = input("Enter your selection (or 'q' to quit): ")
+            if selected_number.lower() == 'q':
+                return None
+            if selected_number.isdigit():
+                return self.handle_numeric_selection(int(selected_number), top_labels, chatgpt_prediction)
+            return self.handle_custom_input(args)
+
+    def handle_numeric_selection(self, selected_number, top_labels, chatgpt_prediction):
+        if selected_number == 4:
+            return chatgpt_prediction
+        elif 1 <= selected_number <= 3:
+            return top_labels[selected_number - 1]
+        return None
+
+    def handle_custom_input(self, args):
+        account_completer = CustomFuzzyWordCompleter(
+            JournalUtils().get_accounts(args.rules.bc_file))
+        kb = self.create_key_bindings()
+        return prompt(
+            'Enter account: ',
+            completer=account_completer,
+            complete_while_typing=True,
+            key_bindings=kb,
+            default=args.rules.default_expense)
+
+    def create_key_bindings(self):
+        kb = KeyBindings()
+
+        @kb.add(Keys.Backspace)
+        def _(event):
+            event.current_buffer.delete_before_cursor(count=1)
+            event.current_buffer.start_completion(select_first=False)
+
+        return kb
+
+    def update_transaction(self, tx, index, txs, category):
+        posting = Posting(category, None, None, None, None, None)
+        new_postings = [tx.postings[0]] + [posting]
+        txs.getTransactions()[index] = tx._replace(postings=new_postings)
+    
     def classify(self, txs, args):
+        if not self.confirm_classification(txs, args):
+            return
 
-        if Confirm.ask(
-                f'\n[red]you have \
-                    [bold] \
-                        {txs.count_no_category(args.rules.default_expense)} \
-                            [/bold] transactions without category, \
-                                do you want to fix them now?[/red]'):
+        for i, tx in enumerate(txs.getTransactions()):
+            if self.has_no_category(tx, args):
+                self.process_transaction(tx, i, txs, args)
 
-            for i, tx in enumerate(txs.getTransactions()):
-                guess = args.rules.default_expense
-
-                if self.has_no_category(tx, args):
-
-                    stripped_text = StringUtils.strip_digits(tx.payee.upper())
-                    # Get predictions
-                    day_of_month = self.get_day_of_month(tx.date)
-                    day_of_week = self.get_day_of_week(tx.date)
-                    top_labels, top_probs, chatgpt_prediction = self.get_top_n_predictions(
-                        self.model, self.label_encoder.classes_, stripped_text, day_of_month, day_of_week
-                    )
-
-                    self.ui_service.display_transaction(tx, top_labels, top_probs, chatgpt_prediction)
-
-                    selected_number = input("Enter your selection (or 'q' to quit): ")
-                    if selected_number.lower() == 'q':
-                        return  # Exit the function if user wants to quit
-                    if selected_number.isdigit():
-                        selected_number = int(selected_number)
-                        if selected_number == 4:
-                            selected_prediction = chatgpt_prediction
-                        elif 1 <= selected_number <= 3:
-                            selected_prediction = top_labels[selected_number - 1]
-                        else:
-                            selected_prediction = None
-                        
-                        if selected_prediction:
-                            text = selected_prediction
-                        else:
-                            text = guess
-                    else:
-                        account_completer = CustomFuzzyWordCompleter(
-                            JournalUtils().get_accounts(args.rules.bc_file))                        
-                    
-                        # Create custom key bindings
-                        kb = KeyBindings()
-
-                        @kb.add(Keys.Backspace)
-                        def _(event):
-                            """
-                            When backspace is pressed, delete the character and then
-                            run auto-completion.
-                            """
-                            # Delete the character behind the cursor
-                            event.current_buffer.delete_before_cursor(count=1)
-                            
-                            # Run auto-completion
-                            event.current_buffer.start_completion(select_first=False)
-                        
-                        text = prompt(
-                            'Enter account: ',
-                            completer=account_completer,
-                            complete_while_typing=True,
-                            key_bindings=kb,
-                            default=guess)
-                        
-                        # if text != guess and text != args.rules.default_expense:
-                        #     # guess was wrong, add to training set and update model
-                        #     just_numbers = re.sub(
-                        #         "[^0-9\\.-]", "", str(tx.postings[0].units))
-                        #     df = pd.DataFrame(
-                        #         {"date": tx.date,
-                        #         "desc": StringUtils.strip_digits(
-                        #             tx.payee.upper()),
-                        #         "amount": just_numbers,
-                        #         "cat": [text]
-                        #         })
-                        #     df = df.astype(
-                        #         {"desc": str, "date": str, "amount": float})
-                        #     self.classifier.update([(stripped_text, text)])
-                        #     # save training data
-                        #     df.to_csv(self.trainingDataFile, mode='a',
-                        #             header=False, index=False)
-                        # else:
-                        #     self.classifier.update([(stripped_text, guess)])
-                
-
-                        posting = Posting(text, None, None, None, None, None)
-                        new_postings = [tx.postings[0]] + [posting]
-                        txs.getTransactions()[i] = tx._replace(
-                            postings=new_postings)
-                        
-                        break  # Break the loop to move to the next transaction after successful classification
+        # if text != guess and text != args.rules.default_expense:
+        #     # guess was wrong, add to training set and update model
+        #     just_numbers = re.sub(
+        #         "[^0-9\\.-]", "", str(tx.postings[0].units))
+        #     df = pd.DataFrame(
+        #         {"date": tx.date,
+        #         "desc": StringUtils.strip_digits(
+        #             tx.payee.upper()),
+        #         "amount": just_numbers,
+        #         "cat": [text]
+        #         })
+        #     df = df.astype(
+        #         {"desc": str, "date": str, "amount": float})
+        #     self.classifier.update([(stripped_text, text)])
+        #     # save training data
+        #     df.to_csv(self.trainingDataFile, mode='a',
+        #             header=False, index=False)
+        # else:
+        #     self.classifier.update([(stripped_text, guess)])
     
-    
-    def _get_training(self, df):
-        """Get training data for the classifier, consisting of tuples of
-        (text, category)"""
-        train = []
-        subset = df[df['cat'] != '']
-        for i in subset.index:
-            row = subset.iloc[i]
-            new_desc = StringUtils.strip_digits(row['desc'])
-            train.append((new_desc, row['cat']))
-
-        return train
-
-    # def _extractor(self, doc):
-    #     """Extract tokens from a given string"""
-    #     # TODO: Extend to extract words within words
-    #     # For example, MUSICROOM should give MUSIC and ROOM
-    #     tokens = self._split_by_multiple_delims(doc, [' ', '/'])
-
-    #     features = {}
-
-    #     for token in tokens:
-    #         if token == "" or len(token) < 4:
-    #             continue
-    #         features[token] = True
-
-    #     return features
-
-    def _split_by_multiple_delims(self, string, delims):
-        """Split the given string by the list of delimiters given"""
-        regexp = "|".join(delims)
-
-        return re.split(regexp, string)
