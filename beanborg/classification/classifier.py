@@ -27,7 +27,11 @@ from prompt_toolkit.keys import Keys
 from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completion
 from rich.prompt import Confirm
-
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.preprocessing import StandardScaler
+from imblearn.pipeline import Pipeline as ImbPipeline
 
 class Classifier:
     
@@ -35,22 +39,53 @@ class Classifier:
         self.trainingDataFile = data
 
         self.training_data = DataLoader.load_data(self.trainingDataFile)
-
+        self._create_and_fit_model()
+        
+        self.gpt_service = GPTService()
+        self.ui_service = UIService()
+    
+    def _remove_single_sample_classes(self, X, y):
+        class_counts = y.value_counts()
+        classes_to_keep = class_counts[class_counts >= 2].index
+        mask = y.isin(classes_to_keep)
+        return X[mask], y[mask]
+    
+    def _create_and_fit_model(self):
         X = self.training_data[["desc", "day_of_month", "day_of_week"]]
         y = self.training_data["cat"]
+
+        # Remove classes with only one sample
+        X, y = self._remove_single_sample_classes(X, y)
 
         # Encode target labels
         self.label_encoder = LabelEncoder()
         y_encoded = self.label_encoder.fit_transform(y)
 
-        self.model = ModelBuilder.build_model()
+        # Create feature processing pipeline
+        feature_pipeline = ColumnTransformer([
+            ('text', make_pipeline(
+                CountVectorizer(analyzer=str.split),  # Removed token_pattern
+                StandardScaler(with_mean=False)
+            ), 'desc'),
+            ('num', StandardScaler(), ['day_of_month', 'day_of_week'])
+        ])
+
+        # Create KNN classifier
+        n_neighbors = min(5, len(y) - 1)
+        knn = KNeighborsClassifier(n_neighbors=n_neighbors)
+
+        # Create pipeline with SMOTE
+        self.model = ImbPipeline([
+            ('features', feature_pipeline),
+            ('smote', SMOTE(k_neighbors=min(5, min(y.value_counts()) - 1))),
+            ('classifier', knn)
+        ])
+
+        # Fit the model
         self.model.fit(X, y_encoded)
 
-        self.gpt_service = GPTService()
-        self.ui_service = UIService()
 
     def has_no_category(self, tx, args) -> bool:
-
         return tx.postings[1].account == args.rules.default_expense
 
 
@@ -136,7 +171,7 @@ class Classifier:
         return prompt(
             'Enter account: ',
             completer=account_completer,
-            complete_while_typing=True,
+            complete_while_typing=False,
             key_bindings=kb,
             default=args.rules.default_expense)
 
@@ -205,10 +240,7 @@ class Classifier:
         self.training_data = pd.concat([self.training_data, new_data], ignore_index=True)
 
     def _retrain_model(self):
-        X = self.training_data[["desc", "day_of_month", "day_of_week"]]
-        y = self.training_data["cat"]
-        y_encoded = self.label_encoder.fit_transform(y)
-        self.model.fit(X, y_encoded)
+        self._create_and_fit_model()
 
     def classify(self, txs, args):
         if not self.confirm_classification(txs, args):
