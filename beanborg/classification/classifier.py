@@ -3,7 +3,6 @@
 from rich.prompt import Confirm
 from beancount.parser.printer import format_entry
 import pandas as pd
-import re
 import numpy as np
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import make_pipeline
@@ -23,17 +22,10 @@ from beanborg.classification.ui_service import UIService
 from beanborg.utils.journal_utils import JournalUtils
 from beancount.core.data import Posting
 from beanborg.utils.string_utils import StringUtils
-from openai import OpenAI
-from rich.console import Console
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completion
-from rich.panel import Panel
-from rich.layout import Layout
-from rich import box
-from rich.live import Live
-from rich.text import Text
 
 # https://matt.sh/python-project-structure-2024
 class Classifier:
