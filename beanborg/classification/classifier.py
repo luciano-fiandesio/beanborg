@@ -26,17 +26,18 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completion
+from rich.prompt import Confirm
 
-# https://matt.sh/python-project-structure-2024
+
 class Classifier:
     
     def __init__(self, data="tmp/training_data.csv"):
         self.trainingDataFile = data
 
-        training_data = DataLoader.load_data(self.trainingDataFile)
+        self.training_data = DataLoader.load_data(self.trainingDataFile)
 
-        X = training_data[["desc", "day_of_month", "day_of_week"]]
-        y = training_data["cat"]
+        X = self.training_data[["desc", "day_of_month", "day_of_week"]]
+        y = self.training_data["cat"]
 
         # Encode target labels
         self.label_encoder = LabelEncoder()
@@ -97,9 +98,15 @@ class Classifier:
         self.ui_service.display_transaction(tx, top_labels, top_probs, chatgpt_prediction)
 
         selected_category = self.get_user_selection(top_labels, chatgpt_prediction, args)
-
-        if selected_category:
+        if selected_category is None:
+            return 'quit'
+        
+        elif selected_category:
             self.update_transaction(tx, index, txs, selected_category)
+            amount = tx.postings[0].units.number  # Assuming the first posting contains the transaction amount
+            self.update_training_data(tx.date, stripped_text, amount, selected_category, day_of_month, day_of_week)
+
+            return 'continue'
 
     def get_predictions(self, text, day_of_month, day_of_week):
         return self.get_top_n_predictions(
@@ -148,31 +155,67 @@ class Classifier:
         new_postings = [tx.postings[0]] + [posting]
         txs.getTransactions()[index] = tx._replace(postings=new_postings)
     
+    def update_training_data(self, date, description, amount, category, day_of_month, day_of_week):
+        # Check if the exact description already exists
+        existing_entry = self.training_data[self.training_data['desc'] == description]
+        
+        if not existing_entry.empty:
+            existing_category = existing_entry['cat'].iloc[0]
+            if existing_category != category:
+                print(f"Description '{description}' already exists with category '{existing_category}'.")
+                action = input(
+                    "Choose action:\n"
+                    "1. Update existing entry\n"
+                    "2. Add new entry\n"
+                    "3. Skip update\n"
+                    "Enter choice (1/2/3): "
+                )
+                
+                if action == '1':
+                    self.training_data.loc[self.training_data['desc'] == description, 'cat'] = category
+                    print("Existing entry updated.")
+                elif action == '2':
+                    self._add_new_entry(date, description, amount, category, day_of_month, day_of_week)
+                    print("New entry added.")
+                else:
+                    print("Update skipped.")
+                    return
+            else:
+                print(f"Entry already exists with the same category. Skipping update.")
+                return
+        else:
+            self._add_new_entry(date, description, amount, category, day_of_month, day_of_week)
+            print("New entry added.")
+        
+        # Save updated data
+        self.training_data.to_csv(self.trainingDataFile, index=False)
+        
+        # Retrain the model
+        self._retrain_model()
+
+    def _add_new_entry(self, date, description, amount, category, day_of_month, day_of_week):
+        new_data = pd.DataFrame({
+            'date': [date],
+            'desc': [description],
+            'amount': [amount],
+            'cat': [category],
+            'day_of_month': [day_of_month],
+            'day_of_week': [day_of_week]
+        })
+        self.training_data = pd.concat([self.training_data, new_data], ignore_index=True)
+
+    def _retrain_model(self):
+        X = self.training_data[["desc", "day_of_month", "day_of_week"]]
+        y = self.training_data["cat"]
+        y_encoded = self.label_encoder.fit_transform(y)
+        self.model.fit(X, y_encoded)
+
     def classify(self, txs, args):
         if not self.confirm_classification(txs, args):
             return
 
         for i, tx in enumerate(txs.getTransactions()):
             if self.has_no_category(tx, args):
-                self.process_transaction(tx, i, txs, args)
-
-        # if text != guess and text != args.rules.default_expense:
-        #     # guess was wrong, add to training set and update model
-        #     just_numbers = re.sub(
-        #         "[^0-9\\.-]", "", str(tx.postings[0].units))
-        #     df = pd.DataFrame(
-        #         {"date": tx.date,
-        #         "desc": StringUtils.strip_digits(
-        #             tx.payee.upper()),
-        #         "amount": just_numbers,
-        #         "cat": [text]
-        #         })
-        #     df = df.astype(
-        #         {"desc": str, "date": str, "amount": float})
-        #     self.classifier.update([(stripped_text, text)])
-        #     # save training data
-        #     df.to_csv(self.trainingDataFile, mode='a',
-        #             header=False, index=False)
-        # else:
-        #     self.classifier.update([(stripped_text, guess)])
-    
+                result = self.process_transaction(tx, i, txs, args)
+                if result == 'quit':
+                    break
