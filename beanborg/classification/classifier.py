@@ -2,7 +2,6 @@
 
 from rich.prompt import Confirm
 from beancount.parser.printer import format_entry
-import os
 import pandas as pd
 import re
 import numpy as np
@@ -17,6 +16,10 @@ from textblob.classifiers import NaiveBayesClassifier
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import FuzzyWordCompleter
 from beanborg.classification.custom_fuzzy_wordf_completer import CustomFuzzyWordCompleter
+from beanborg.classification.data_loader import DataLoader
+from beanborg.classification.gpt_service import GPTService
+from beanborg.classification.model_builder import ModelBuilder
+from beanborg.classification.ui_service import UIService
 from beanborg.utils.journal_utils import JournalUtils
 from beancount.core.data import Posting
 from beanborg.utils.string_utils import StringUtils
@@ -31,25 +34,15 @@ from rich.layout import Layout
 from rich import box
 from rich.live import Live
 from rich.text import Text
-import time
 
 # https://matt.sh/python-project-structure-2024
 class Classifier:
 
-    def load_data(self, filepath):
-
-        # Load CSV data and extract date-related features
-        data = pd.read_csv(filepath)
-        # Convert 'date' column to datetime and extract day of month
-        data["day_of_month"] = pd.to_datetime(data["date"], errors="coerce").dt.day
-        # Convert 'date' column to datetime and extract day of week (0-6, where 0 is Monday)
-        data["day_of_week"] = pd.to_datetime(data["date"], errors="coerce").dt.dayofweek
-        return data
-
+    
     def __init__(self, data="tmp/training_data.csv"):
         self.trainingDataFile = data
 
-        training_data = self.load_data(self.trainingDataFile)
+        training_data = DataLoader.load_data(self.trainingDataFile)
 
         X = training_data[["desc", "day_of_month", "day_of_week"]]
         y = training_data["cat"]
@@ -58,57 +51,15 @@ class Classifier:
         self.label_encoder = LabelEncoder()
         y_encoded = self.label_encoder.fit_transform(y)
 
-        self.model = self.build_model()
+        self.model = ModelBuilder.build_model()
         self.model.fit(X, y_encoded)
-       
+
+        self.gpt_service = GPTService()
+        self.ui_service = UIService()
 
     def has_no_category(self, tx, args) -> bool:
 
         return tx.postings[1].account == args.rules.default_expense
-    
-    
-    def build_model(self):
-        column_transformer = ColumnTransformer(
-            transformers=[
-                ("desc_tfidf", TfidfVectorizer(ngram_range=(1, 3)), "desc"),
-            ("day_scaler", MinMaxScaler(), ["day_of_month"]),
-            ("day_week_onehot", OneHotEncoder(), ["day_of_week"]),
-        ],
-        remainder="passthrough",
-        )
-
-        pipeline = make_pipeline(
-            column_transformer,
-            SMOTE(random_state=42, k_neighbors=1),
-            SVC(probability=True, kernel="linear", C=1.0),
-        )
-
-        return pipeline
-
-    def query_gpt4_for_label(self,description, labels):
-        try:
-            client = OpenAI()
-
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are 'TransactionBud' a helpful and concise utility designed to categorize bank transactions efficiently. Your primary function is to assign a category to each transaction presented to you",
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Given the description '{description}', what would be the most appropriate category among the following: {', '.join(labels)}? Only output the category name without any additional text.",
-                    },
-                ],
-                temperature=0.7,
-                top_p=1,
-            )
-            return response.choices[0].message.content
-            # return response["choices"][0]["message"]["content"]
-        except Exception as e:
-            print(f"Failed to query GPT-4: {str(e)}")
-            return None
 
 
     def get_top_n_predictions(self, model, labels, text, day_of_month, day_of_week, n=3):
@@ -130,7 +81,7 @@ class Classifier:
         top_classes = labels[top_indices]
         top_probabilities = probs[0][top_indices]
 
-        alternative_label = self.query_gpt4_for_label(text, labels)
+        alternative_label = self.gpt_service.query_gpt_for_label(text, labels)
         print(f"Alternative label from ChatGPT-4: {alternative_label}")
         return top_classes, top_probabilities, alternative_label
 
