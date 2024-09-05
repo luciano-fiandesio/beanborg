@@ -17,6 +17,7 @@ from prompt_toolkit.completion import FuzzyWordCompleter
 from beanborg.classification.custom_fuzzy_wordf_completer import CustomFuzzyWordCompleter
 from beanborg.classification.data_loader import DataLoader
 from beanborg.classification.gpt_service import GPTService
+from beanborg.classification.transaction_model import TransactionModel
 from beanborg.classification.ui_service import UIService
 from beanborg.utils.journal_utils import JournalUtils
 from beancount.core.data import Posting
@@ -34,87 +35,31 @@ from imblearn.pipeline import Pipeline as ImbPipeline
 
 class Classifier:
     
-    def __init__(self, data="tmp/training_data.csv"):
+    def __init__(self, data="training_data.csv"):
         self.trainingDataFile = data
 
         self.training_data = DataLoader.load_data(self.trainingDataFile)
-        self._create_and_fit_model()
+        self.model = TransactionModel(self.training_data, data)
         
         self.gpt_service = GPTService()
         self.ui_service = UIService()
-    
-    def _remove_single_sample_classes(self, X, y):
-        class_counts = y.value_counts()
-        classes_to_keep = class_counts[class_counts >= 2].index
-        mask = y.isin(classes_to_keep)
-        return X[mask], y[mask]
-    
-    def _create_and_fit_model(self):
-        X = self.training_data[["desc", "day_of_month", "day_of_week"]]
-        y = self.training_data["cat"]
-
-        # Remove classes with only one sample
-        X, y = self._remove_single_sample_classes(X, y)
-
-        # Encode target labels
-        self.label_encoder = LabelEncoder()
-        y_encoded = self.label_encoder.fit_transform(y)
-
-        # Create feature processing pipeline
-        feature_pipeline = ColumnTransformer([
-            ('text', make_pipeline(
-                CountVectorizer(analyzer=str.split),  # Removed token_pattern
-                StandardScaler(with_mean=False)
-            ), 'desc'),
-            ('num', StandardScaler(), ['day_of_month', 'day_of_week'])
-        ])
-
-        # Create KNN classifier
-        n_neighbors = min(5, len(y) - 1)
-        knn = KNeighborsClassifier(n_neighbors=n_neighbors)
-
-        # Create pipeline with SMOTE
-        self.model = ImbPipeline([
-            ('features', feature_pipeline),
-            ('smote', SMOTE(k_neighbors=min(5, min(y.value_counts()) - 1))),
-            ('classifier', knn)
-        ])
-
-        # Fit the model
-        self.model.fit(X, y_encoded)
 
     def has_no_category(self, tx, args) -> bool:
         return tx.postings[1].account == args.rules.default_expense
 
-    def get_top_n_predictions(self, model, labels, text, day_of_month, day_of_week, n=3):
-        # Create a DataFrame for the input text with the same structure as the training data
-        data = {
-            "desc": [text],
-            "day_of_month": [day_of_month],
-            "day_of_week": [day_of_week],
-        }
-        input_df = pd.DataFrame(data)
-
-        # Predict the probabilities for the input DataFrame
-        probs = model.predict_proba(input_df)
-
-        # Get the indices of the top n probabilities
-        top_indices = np.argsort(probs[0])[-n:][::-1]
-
-        # Map indices to class labels and probabilities
-        top_classes = labels[top_indices]
-        top_probabilities = probs[0][top_indices]
-
-        alternative_label = self.gpt_service.query_gpt_for_label(text, labels)
-        print(f"Alternative label from ChatGPT-4: {alternative_label}")
-        return top_classes, top_probabilities, alternative_label
-
+    
     def get_day_of_month(self, date):
         return pd.to_datetime(date).day
     
     def get_day_of_week(self, date):
         return pd.to_datetime(date).dayofweek
 
+    def get_predictions(self, text, day_of_month, day_of_week):
+        # Use the TransactionModel for predictions
+        top_labels, top_probs = self.model.predict(text, day_of_month, day_of_week)
+        alternative_label = self.gpt_service.query_gpt_for_label(text, top_labels)
+        return top_labels, top_probs, alternative_label
+    
     def confirm_classification(self, txs, args):
         return Confirm.ask(
             f'\n[red]You have [bold]{txs.count_no_category(args.rules.default_expense)}[/bold] '
@@ -136,14 +81,10 @@ class Classifier:
         elif selected_category:
             self.update_transaction(tx, index, txs, selected_category)
             amount = tx.postings[0].units.number  # Assuming the first posting contains the transaction amount
-            self.update_training_data(tx.date, stripped_text, amount, selected_category, day_of_month, day_of_week)
+            self.model.update_training_data(tx.date, stripped_text, amount, selected_category, day_of_month, day_of_week)
 
             return 'continue'
 
-    def get_predictions(self, text, day_of_month, day_of_week):
-        return self.get_top_n_predictions(
-            self.model, self.label_encoder.classes_, text, day_of_month, day_of_week
-        )
 
     def get_user_selection(self, top_labels, chatgpt_prediction, args):
         while True:
@@ -168,7 +109,7 @@ class Classifier:
         return prompt(
             'Enter account: ',
             completer=account_completer,
-            complete_while_typing=False,
+            complete_while_typing=True,
             key_bindings=kb,
             default=args.rules.default_expense)
 
@@ -187,58 +128,7 @@ class Classifier:
         new_postings = [tx.postings[0]] + [posting]
         txs.getTransactions()[index] = tx._replace(postings=new_postings)
     
-    def update_training_data(self, date, description, amount, category, day_of_month, day_of_week):
-        # Check if the exact description already exists
-        existing_entry = self.training_data[self.training_data['desc'] == description]
-        
-        if not existing_entry.empty:
-            existing_category = existing_entry['cat'].iloc[0]
-            if existing_category != category:
-                print(f"Description '{description}' already exists with category '{existing_category}'.")
-                action = input(
-                    "Choose action:\n"
-                    "1. Update existing entry\n"
-                    "2. Add new entry\n"
-                    "3. Skip update\n"
-                    "Enter choice (1/2/3): "
-                )
-                
-                if action == '1':
-                    self.training_data.loc[self.training_data['desc'] == description, 'cat'] = category
-                    print("Existing entry updated.")
-                elif action == '2':
-                    self._add_new_entry(date, description, amount, category, day_of_month, day_of_week)
-                    print("New entry added.")
-                else:
-                    print("Update skipped.")
-                    return
-            else:
-                print(f"Entry already exists with the same category. Skipping update.")
-                return
-        else:
-            self._add_new_entry(date, description, amount, category, day_of_month, day_of_week)
-            print("New entry added.")
-        
-        # Save updated data
-        self.training_data.to_csv(self.trainingDataFile, index=False)
-        
-        # Retrain the model
-        self._retrain_model()
-
-    def _add_new_entry(self, date, description, amount, category, day_of_month, day_of_week):
-        new_data = pd.DataFrame({
-            'date': [date],
-            'desc': [description],
-            'amount': [amount],
-            'cat': [category],
-            'day_of_month': [day_of_month],
-            'day_of_week': [day_of_week]
-        })
-        self.training_data = pd.concat([self.training_data, new_data], ignore_index=True)
-
-    def _retrain_model(self):
-        self._create_and_fit_model()
-
+    
     def classify(self, txs, args):
         if not self.confirm_classification(txs, args):
             return
