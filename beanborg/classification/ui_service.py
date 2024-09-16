@@ -4,6 +4,7 @@ from beancount.parser.printer import format_entry
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
+from rich.syntax import Syntax
 
 
 class UIService:
@@ -14,8 +15,12 @@ class UIService:
         console = Console()
         console.clear()
 
+        # Convert the transaction to a string and apply syntax highlighting
+        tx_str = format_entry(tx)
+        highlighted_tx = Syntax(tx_str, "python", theme="monokai", line_numbers=False)
+
         tx_panel = Panel(
-            format_entry(tx),
+            highlighted_tx,
             title="Transaction",
             width=80,
             expand=False,
