@@ -142,8 +142,6 @@ class TransactionModel:
                 "desc": [description],
                 "amount": [amount],
                 "cat": [category],
-                "day_of_month": [day_of_month],
-                "day_of_week": [day_of_week],
             }
         )
 
@@ -159,7 +157,7 @@ class TransactionModel:
                     f.write(b"\n")  # If not, add a newline
 
         # Now append the new data
-        new_data.to_csv(self.data_file, mode="a", header=not file_exists, index=False)
+        new_data.to_csv(self.data_file, mode="a", header=False, index=False)
 
     def _handle_existing_entry_conflict(
         self,
