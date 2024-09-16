@@ -7,14 +7,15 @@ from beancount.core.number import D
 class AmountHandler:
 
     # create mapping tables for currency conversion
-    sign_trans = str.maketrans({'$': '', ' ': ''})  # remove $ and space
-    dot_trans = str.maketrans({'.': '', ',': ''})  # remove . and ,
+    sign_trans = str.maketrans({"$": "", " ": ""})  # remove $ and space
+    dot_trans = str.maketrans({".": "", ",": ""})  # remove . and ,
 
     def handle(self, val, args):
 
         if args.indexes.amount_in:
-            return self.__convert(
-                val[args.indexes.amount_in].strip()) - self.__convert(val)
+            return self.__convert(val[args.indexes.amount_in].strip()) - self.__convert(
+                val
+            )
 
         if args.rules.invert_negative and val[0] == "-":
             val = val.replace("-", "+")
@@ -42,4 +43,4 @@ class AmountHandler:
 
         num = num.translate(sign_trans)
         num = num[:-3].translate(dot_trans) + num[-3:]
-        return D(num.replace(',', '.'))
+        return D(num.replace(",", "."))

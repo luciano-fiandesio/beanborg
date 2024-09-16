@@ -2,28 +2,30 @@
 import csv
 import os
 import sys
-from random import SystemRandom
 import traceback
 from dataclasses import dataclass
-from beanborg.arg_parser import eval_args
-from beanborg.config import init_config
+from datetime import datetime, timedelta
+from random import SystemRandom
+
+from beancount.core.data import Amount
+from beancount.parser.printer import format_entry
 from rich import print as rprint
 from rich.table import Table
-from datetime import datetime, timedelta
-from beancount.parser.printer import format_entry
-from beancount.core.data import Amount
+
+from beanborg.arg_parser import eval_args
+from beanborg.classification.classifier import Classifier
+from beanborg.config import init_config
 from beanborg.handlers.amount_handler import AmountHandler
+from beanborg.model.transactions import Transactions
 from beanborg.rule_engine.Context import Context
 from beanborg.rule_engine.rules_engine import RuleEngine
-from beanborg.utils.hash_utils import hash
 from beanborg.utils.duplicate_detector import (
-    init_duplication_store,
     hash_tuple,
-    to_tuple,
+    init_duplication_store,
     print_duplication_warning,
+    to_tuple,
 )
-from beanborg.classification.classifier import Classifier
-from beanborg.model.transactions import Transactions
+from beanborg.utils.hash_utils import hash
 from beanborg.utils.journal_utils import JournalUtils
 
 
@@ -78,10 +80,12 @@ class Importer:
 
         folder = self.args.rules.rules_folder
 
-        if len(self.args.rules.ruleset) > 1 \
-                and not os.path.isfile(folder + "/asset.rules") \
-                and self.args.rules.account is None \
-                and self.args.rules.origin_account is None:
+        if (
+            len(self.args.rules.ruleset) > 1
+            and not os.path.isfile(folder + "/asset.rules")
+            and self.args.rules.account is None
+            and self.args.rules.origin_account is None
+        ):
 
             rprint(
                 "[red]Please specify an account in your config file "
@@ -117,8 +121,7 @@ class Importer:
         table.add_row("tx skipped by user", str(self.stats.skipped_by_user))
 
         if self.stats.error > 0:
-            table.add_row("error", str(
-                self.stats.error), style="red")
+            table.add_row("error", str(self.stats.error), style="red")
         else:
             table.add_row("error", str(self.stats.error))
         table.add_row("tx without category", str(self.stats.no_category))
@@ -127,7 +130,7 @@ class Importer:
 
     def get_account(self, row):
         """get the account value for the given csv line
-           or use the specified account
+        or use the specified account
         """
         if self.args.rules.account:
             return self.args.rules.account
@@ -136,7 +139,7 @@ class Importer:
 
     def get_currency(self, row):
         """get the currency value for the given csv line or
-           use the specified currency
+        use the specified currency
         """
         if self.args.rules.currency:
             return self.args.rules.currency
@@ -144,10 +147,11 @@ class Importer:
 
     def warn_hash_collision(self, row, md5):
         rprint(
-            '[red]warning[/red]: '
-            'a transaction with identical hash exists in '
-            'the journal: '
-            f'[bold]{md5}[/bold]')
+            "[red]warning[/red]: "
+            "a transaction with identical hash exists in "
+            "the journal: "
+            f"[bold]{md5}[/bold]"
+        )
         self.log_error(row)
         self.stats.hash_collision += 1
 
@@ -164,8 +168,8 @@ class Importer:
     def verify_accounts_count(self):
         if len(self.accounts) > 1 and len(self.transactions) > 0:
             rprint(
-                '[red]Expecting only one account in csv'
-                f'file, found: {str(len(self.accounts))}[/red]'
+                "[red]Expecting only one account in csv"
+                f"file, found: {str(len(self.accounts))}[/red]"
             )
 
     def verify_unique_transactions(self, account):
@@ -210,8 +214,7 @@ class Importer:
         tx_hashes = JournalUtils().transaction_hashes(self.args.rules.bc_file)
 
         with open(import_csv) as csv_file:
-            csv_reader = csv.reader(
-                csv_file, delimiter=self.args.csv.separator)
+            csv_reader = csv.reader(csv_file, delimiter=self.args.csv.separator)
             for _ in range(self.args.csv.skip):
                 next(csv_reader)  # skip the line
             for row in csv_reader:
@@ -266,7 +269,8 @@ class Importer:
                 "please check that the `Replace_Asset` rule "
                 "is in use for this account or set the "
                 " `origin_account` property "
-                "in the config file.")
+                "in the config file."
+            )
 
         return tx
 
@@ -289,13 +293,11 @@ class Importer:
         new_posting = tx.postings[0]._replace(
             units=Amount(amount, self.get_currency(row))
         )
-        tx = tx._replace(
-            postings=[new_posting] + [tx.postings[1]])
+        tx = tx._replace(postings=[new_posting] + [tx.postings[1]])
 
         # add narration
         if self.args.indexes.narration:
-            tx = tx._replace(
-                narration=row[self.args.indexes.narration].strip())
+            tx = tx._replace(narration=row[self.args.indexes.narration].strip())
 
         if self.debug():
             print(tx)

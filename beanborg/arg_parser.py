@@ -3,9 +3,7 @@ import argparse
 
 def eval_args(help_message):
 
-    parser = argparse.ArgumentParser(
-        description=help_message
-    )
+    parser = argparse.ArgumentParser(description=help_message)
 
     parser.add_argument(
         "-f",

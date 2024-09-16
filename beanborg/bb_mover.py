@@ -6,10 +6,12 @@ __license__ = "GNU GPLv2"
 
 import glob
 import os
-import sys
 import shutil
-from subprocess import check_call, CalledProcessError
+import sys
+from subprocess import CalledProcessError, check_call
+
 from rich import print as rprint
+
 from beanborg.arg_parser import eval_args
 from beanborg.config import init_config
 
@@ -22,45 +24,40 @@ def main():
     # support path like ~/Downloads
     path = os.path.expanduser(config.csv.download_path)
     if not os.path.isdir(path):
-        rprint(
-            f'[red]folder: {config.csv.download_path} does not exist![/red]')
+        rprint(f"[red]folder: {config.csv.download_path} does not exist![/red]")
         sys.exit(-1)
 
     if not os.path.isdir(config.csv.target):
         os.mkdir(config.csv.target)
 
     # count number of files starting with:
-    file_count = len(
-        glob.glob1(
-            path,
-            config.csv.name +
-            "*"))
+    file_count = len(glob.glob1(path, config.csv.name + "*"))
 
     if file_count > 1:
-        print("more than one file starting with % s found in %s. \
-              Can not continue ." %
-              (config.csv.name, config.csv.download_path))
+        print(
+            "more than one file starting with % s found in %s. \
+              Can not continue ."
+            % (config.csv.name, config.csv.download_path)
+        )
         sys.exit(-1)
 
     if file_count == 0:
         rprint(
-            f'[red]No file found in [bold]{config.csv.download_path}[/bold] '
-            f'with name starting with: [bold]{config.csv.name}[/bold][/red]'
+            f"[red]No file found in [bold]{config.csv.download_path}[/bold] "
+            f"with name starting with: [bold]{config.csv.name}[/bold][/red]"
         )
         sys.exit(-1)
 
-    if config.csv.post_script_path and not os.path.isfile(
-            config.csv.post_script_path):
+    if config.csv.post_script_path and not os.path.isfile(config.csv.post_script_path):
         print("No post-move script found: %s" % (config.csv.post_script_path))
         sys.exit(-1)
 
     for f in os.listdir(path):
         if f.startswith(config.csv.name):
             src = os.path.join(path, f)
-            moved_csv = os.path.join(
-                config.csv.target, config.csv.ref + ".csv")
+            moved_csv = os.path.join(config.csv.target, config.csv.ref + ".csv")
             if config.csv.keep_original:
-                shutil.copy(src,moved_csv)
+                shutil.copy(src, moved_csv)
             else:
                 os.rename(src, moved_csv)
 

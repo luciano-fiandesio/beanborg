@@ -7,3 +7,4 @@ PyYAML==6.0.1
 textblob==0.17.1
 openai>=1.14.1
 numpy==1.26.3
+# imblearn

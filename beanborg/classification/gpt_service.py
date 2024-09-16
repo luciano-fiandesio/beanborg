@@ -1,10 +1,12 @@
-from openai import OpenAI
 from typing import List, Optional
+
+from openai import OpenAI
+
 
 class GPTService:
     def __init__(self):
         self.client = OpenAI()
-        
+
     def query_gpt_for_label(self, description: str, labels: List[str]) -> Optional[str]:
         try:
             response = self.client.chat.completions.create(

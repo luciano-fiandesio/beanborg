@@ -1,7 +1,4 @@
-from prompt_toolkit.document import Document
-from prompt_toolkit.completion import Completion
-from prompt_toolkit import prompt
-from prompt_toolkit.completion import FuzzyWordCompleter
+from prompt_toolkit.completion import Completion, FuzzyWordCompleter
 
 
 class CustomFuzzyWordCompleter(FuzzyWordCompleter):

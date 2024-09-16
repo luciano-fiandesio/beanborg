@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 
+import fnmatch
+import os
 import sys
 import uuid
-from beancount.core.data import Transaction, Posting
-from .Context import Context
-from .rules import *
 from dataclasses import dataclass
 from typing import Dict, List
-import os
-import fnmatch
 
-__location__ = os.path.realpath(os.path.join(
-    os.getcwd(), os.path.dirname(__file__)))
+from beancount.core.data import Posting, Transaction
+
+from .Context import Context
+from .rules import *
+
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 
 @dataclass
@@ -75,8 +76,11 @@ class RuleEngine:
         custom_rules = self.load_custom_rules()
 
         if self._ctx.ruleset is None:
-            print(u"\u26A0" + " no rules file spefified for this financial \
-                institution")
+            print(
+                "\u26A0"
+                + " no rules file spefified for this financial \
+                institution"
+            )
             self.rules = {}
         else:
             for yrule in self._ctx.ruleset:
@@ -88,21 +92,15 @@ class RuleEngine:
                         rule_props[key] = yrule.get(key)
 
                 if rule_name in custom_rules:
-                    self.rules[rule_name] = RuleDef(
-                        custom_rules[rule_name],
-                        rule_props
-                    )
+                    self.rules[rule_name] = RuleDef(custom_rules[rule_name], rule_props)
                 else:
                     unique_rule_name = rule_name + "|" + uuid.uuid4().hex.upper()[0:6]
                     self.rules[unique_rule_name] = RuleDef(
                         globals()[rule_name], rule_props
                     )
         # assign default rules, if they are not already specified
-        if ctx.rules_dir and not self.is_rule_in_list('Replace_Asset'):
-            self.rules['Replace_Asset'] = RuleDef(
-                globals()['Replace_Asset'],
-                None
-            )
+        if ctx.rules_dir and not self.is_rule_in_list("Replace_Asset"):
+            self.rules["Replace_Asset"] = RuleDef(globals()["Replace_Asset"], None)
 
     def is_rule_in_list(self, name):
         for rule_name in self.rules:
@@ -121,9 +119,7 @@ class RuleEngine:
                     print("Custom rules folder not found...ignoring")
                 return custom_rulez
             sys.path.append(custom_rules_path)
-            custom_rules = fnmatch.filter(
-                os.listdir(custom_rules_path), "*.py"
-            )
+            custom_rules = fnmatch.filter(os.listdir(custom_rules_path), "*.py")
             for r in custom_rules:
                 mod_name = r[:-3]
                 mod = __import__(mod_name, globals={})
