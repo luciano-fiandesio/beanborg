@@ -69,10 +69,9 @@ class Classifier:
             return "quit"
 
         elif selected_category:
-            self.update_transaction(tx, index, txs, selected_category)
-            amount = tx.postings[
-                0
-            ].units.number  # Assuming the first posting contains the transaction amount
+            narration = self.get_user_narration()
+            self.update_transaction(tx, index, txs, selected_category, narration)
+            amount = tx.postings[0].units.number
             self.model.update_training_data(
                 tx.date,
                 stripped_text,
@@ -83,6 +82,12 @@ class Classifier:
             )
 
             return "continue"
+
+    def get_user_narration(self):
+        narration = input(
+            "Enter a comment for the transaction (press Enter to skip): "
+        ).strip()
+        return narration if narration else None
 
     def get_user_selection(self, top_labels, chatgpt_prediction, args):
         while True:
@@ -125,10 +130,13 @@ class Classifier:
 
         return kb
 
-    def update_transaction(self, tx, index, txs, category):
+    def update_transaction(self, tx, index, txs, category, narration=None):
         posting = Posting(category, None, None, None, None, None)
         new_postings = [tx.postings[0]] + [posting]
-        txs.getTransactions()[index] = tx._replace(postings=new_postings)
+        new_tx = tx._replace(postings=new_postings)
+        if narration:
+            new_tx = new_tx._replace(narration=narration)
+        txs.getTransactions()[index] = new_tx
 
     def classify(self, txs, args):
         if not self.confirm_classification(txs, args):
