@@ -92,8 +92,13 @@ class TransactionModel:
         """
         Updates the training data with a new or existing entry and retrains the model.
         """
+
+        tokenized_description = self._tokenize_description(description)
+
         # Check if the description already exists
-        existing_entry = self.training_data[self.training_data["desc"] == description]
+        existing_entry = self.training_data[
+            self.training_data["desc"] == tokenized_description
+        ]
 
         if not existing_entry.empty:
             existing_category = existing_entry["cat"].iloc[0]
@@ -101,7 +106,7 @@ class TransactionModel:
             if existing_category != category:
                 # Conflict found: Ask user how to handle the conflicting category
                 self._handle_existing_entry_conflict(
-                    description,
+                    tokenized_description,
                     existing_category,
                     date,
                     amount,
@@ -118,13 +123,13 @@ class TransactionModel:
         else:
             # Add a new entry
             self._add_new_entry(
-                date, description, amount, category, day_of_month, day_of_week
+                date, tokenized_description, amount, category, day_of_month, day_of_week
             )
             print(f"New entry added: '{description}' with category '{category}'.")
 
         # Append the new data to the CSV file instead of rewriting it entirely
         self._append_to_csv(
-            date, description, amount, category, day_of_month, day_of_week
+            date, tokenized_description, amount, category, day_of_month, day_of_week
         )
 
         self._create_and_fit_model()
@@ -223,3 +228,11 @@ class TransactionModel:
         self.training_data = pd.concat(
             [self.training_data, new_data], ignore_index=True
         )
+
+    def _tokenize_description(self, description):
+        """
+        Tokenize the description using CountVectorizer.
+        """
+        vectorizer = CountVectorizer(analyzer=str.split)
+        tokens = vectorizer.build_analyzer()(description)
+        return " ".join(tokens)
