@@ -18,6 +18,7 @@ class Rules:
         ruleset=[],
         advanced_duplicate_detection=None,
         training_data=None,
+        use_llm=None,
     ):
         self.bc_file = bc_file
         self.rules_folder = rules_folder
@@ -30,6 +31,7 @@ class Rules:
         self.ruleset = ruleset
         self.advanced_duplicate_detection = advanced_duplicate_detection
         self.training_data = training_data
+        self.use_llm = use_llm
 
 
 class Indexes:
@@ -132,6 +134,7 @@ class Config:
             rls.get("ruleset", []),
             rls.get("advanced_duplicate_detection", True),
             rls.get("training_data", "training_data.csv"),
+            rls.get("use_llm", False),
         )
 
         return Config(csv, indexes, rules)

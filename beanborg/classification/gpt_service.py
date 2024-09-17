@@ -4,17 +4,18 @@ from openai import AuthenticationError, OpenAI
 
 
 class GPTService:
-    def __init__(self):
-        try:
-            self.client = OpenAI()
-            # Test the API key by making a simple request
-            self.client.models.list()
-        except AuthenticationError:
-            self.client = None
-            print("OpenAI API key is invalid or not set.")
-        except Exception as e:
-            self.client = None
-            print(f"Failed to initialize OpenAI client: {str(e)}")
+    def __init__(self, use_llm: bool):
+        if use_llm:
+            try:
+                self.client = OpenAI()
+                # Test the API key by making a simple request
+                self.client.models.list()
+            except AuthenticationError:
+                self.client = None
+                print("OpenAI API key is invalid or not set.")
+            except Exception as e:
+                self.client = None
+                print(f"Failed to initialize OpenAI client: {str(e)}")
 
     def query_gpt_for_label(self, description: str, labels: List[str]) -> str:
         if not self.client:

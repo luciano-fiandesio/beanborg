@@ -20,13 +20,14 @@ from beanborg.utils.string_utils import StringUtils
 
 class Classifier:
 
-    def __init__(self, data="training_data.csv"):
+    def __init__(self, data="training_data.csv", use_llm=False):
         self.trainingDataFile = data
+        self.use_llm = use_llm
 
         self.training_data = DataLoader.load_data(self.trainingDataFile)
         self.model = TransactionModel(self.training_data, data)
 
-        self.gpt_service = GPTService()
+        self.gpt_service = GPTService(self.use_llm)
         self.ui_service = UIService()
 
     def has_no_category(self, tx, args) -> bool:
@@ -41,7 +42,10 @@ class Classifier:
     def get_predictions(self, text, day_of_month, day_of_week):
         # Use the TransactionModel for predictions
         top_labels, top_probs = self.model.predict(text, day_of_month, day_of_week)
-        alternative_label = self.gpt_service.query_gpt_for_label(text, top_labels)
+        if self.use_llm:
+            alternative_label = self.gpt_service.query_gpt_for_label(text, top_labels)
+        else:
+            alternative_label = "OpenAI not available"
 
         # Check if OpenAI is not available
         if alternative_label == "OpenAI not available":
