@@ -33,9 +33,10 @@ class UIService:
             predictions_content.append(
                 f"[bold cyan]{i}.[/] [cyan]{label}[/] ({prob:.2f})"
             )
-        predictions_content.append(
-            f"[bold cyan]4.[/] ChatGPT: [cyan]{chatgpt_prediction}[/]"
-        )
+        if chatgpt_prediction:
+            predictions_content.append(
+                f"[bold cyan]{len(top_labels) + 1}.[/] ChatGPT: [cyan]{chatgpt_prediction}[/]"
+            )
 
         pred_panel = Panel(
             "\n".join(predictions_content),

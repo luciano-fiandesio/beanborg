@@ -42,6 +42,11 @@ class Classifier:
         # Use the TransactionModel for predictions
         top_labels, top_probs = self.model.predict(text, day_of_month, day_of_week)
         alternative_label = self.gpt_service.query_gpt_for_label(text, top_labels)
+
+        # Check if OpenAI is not available
+        if alternative_label == "OpenAI not available":
+            alternative_label = None
+
         return top_labels, top_probs, alternative_label
 
     def confirm_classification(self, txs, args):
@@ -90,8 +95,12 @@ class Classifier:
         return narration if narration else None
 
     def get_user_selection(self, top_labels, chatgpt_prediction, args):
+        print(chatgpt_prediction)
         while True:
-            selected_number = input("Enter your selection (or 'q' to quit): ")
+            options = len(top_labels) + (1 if chatgpt_prediction else 0)
+            selected_number = input(
+                f"Enter your selection (1-{options}, or 'q' to quit): "
+            )
             if selected_number.lower() == "q":
                 return None
             if selected_number.isdigit():
@@ -101,9 +110,9 @@ class Classifier:
             return self.handle_custom_input(args)
 
     def handle_numeric_selection(self, selected_number, top_labels, chatgpt_prediction):
-        if selected_number == 4:
+        if chatgpt_prediction and selected_number == len(top_labels) + 1:
             return chatgpt_prediction
-        elif 1 <= selected_number <= 3:
+        elif 1 <= selected_number <= len(top_labels):
             return top_labels[selected_number - 1]
         return None
 

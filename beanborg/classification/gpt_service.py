@@ -1,13 +1,25 @@
-from typing import List, Optional
+from typing import List
 
-from openai import OpenAI
+from openai import AuthenticationError, OpenAI
 
 
 class GPTService:
     def __init__(self):
-        self.client = OpenAI()
+        try:
+            self.client = OpenAI()
+            # Test the API key by making a simple request
+            self.client.models.list()
+        except AuthenticationError:
+            self.client = None
+            print("OpenAI API key is invalid or not set.")
+        except Exception as e:
+            self.client = None
+            print(f"Failed to initialize OpenAI client: {str(e)}")
 
-    def query_gpt_for_label(self, description: str, labels: List[str]) -> Optional[str]:
+    def query_gpt_for_label(self, description: str, labels: List[str]) -> str:
+        if not self.client:
+            return "OpenAI not available"
+
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4",
@@ -27,4 +39,4 @@ class GPTService:
             return response.choices[0].message.content
         except Exception as e:
             print(f"Failed to query GPT: {str(e)}")
-            return None
+            return "OpenAI not available"
