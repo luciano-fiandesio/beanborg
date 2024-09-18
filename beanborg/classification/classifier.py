@@ -81,14 +81,15 @@ class Classifier:
             narration = self.get_user_narration()
             self.update_transaction(tx, index, txs, selected_category, narration)
             amount = tx.postings[0].units.number
-            self.model.update_training_data(
-                tx.date,
-                stripped_text,
-                amount,
-                selected_category,
-                day_of_month,
-                day_of_week,
-            )
+            if selected_category != args.rules.default_expense:
+                self.model.update_training_data(
+                    tx.date,
+                    stripped_text,
+                    amount,
+                    selected_category,
+                    day_of_month,
+                    day_of_week,
+                )
 
             return "continue"
 
@@ -103,7 +104,7 @@ class Classifier:
         while True:
             options = len(top_labels) + (1 if chatgpt_prediction else 0)
             selected_number = input(
-                f"Enter your selection (1-{options}, or 'q' to quit): "
+                f"Enter your selection (1-{options}, or 'Enter' to choose the category, 'q' to quit): "
             )
             if selected_number.lower() == "q":
                 return None
