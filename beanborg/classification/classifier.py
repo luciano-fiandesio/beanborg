@@ -5,6 +5,7 @@ from beancount.core.data import Posting
 from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
+from rich import print
 from rich.prompt import Confirm
 
 from beanborg.classification.custom_fuzzy_wordf_completer import (
@@ -76,7 +77,6 @@ class Classifier:
         )
         if selected_category is None:
             return "quit"
-
         elif selected_category:
             narration = self.get_user_narration()
             self.update_transaction(tx, index, txs, selected_category, narration)
@@ -100,7 +100,6 @@ class Classifier:
         return narration if narration else None
 
     def get_user_selection(self, top_labels, chatgpt_prediction, args):
-        print(chatgpt_prediction)
         while True:
             options = len(top_labels) + (1 if chatgpt_prediction else 0)
             selected_number = input(
@@ -122,17 +121,22 @@ class Classifier:
         return None
 
     def handle_custom_input(self, args):
-        account_completer = CustomFuzzyWordCompleter(
-            JournalUtils().get_accounts(args.rules.bc_file)
-        )
+        accounts = JournalUtils().get_accounts(args.rules.bc_file)
+        account_completer = CustomFuzzyWordCompleter(accounts)
         kb = self.create_key_bindings()
-        return prompt(
+        selected_category = prompt(
             "Enter account: ",
             completer=account_completer,
             complete_while_typing=True,
             key_bindings=kb,
             default=args.rules.default_expense,
         )
+        if selected_category not in accounts:
+            print(
+                "[bold red]Invalid account. Please select a valid account.[/bold red]"
+            )
+            return self.handle_custom_input(args)
+        return selected_category
 
     def create_key_bindings(self):
         kb = KeyBindings()

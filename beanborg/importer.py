@@ -250,7 +250,9 @@ class Importer:
         self.stats.processed = filtered_txs.count()
 
         if filtered_txs.count_no_category(self.args.rules.default_expense) > 0:
-            Classifier(self.args.rules.training_data, self.args.rules.use_llm).classify(filtered_txs, self.args)
+            Classifier(self.args.rules.training_data, self.args.rules.use_llm).classify(
+                filtered_txs, self.args
+            )
 
         # write transactions to file
         account_file = working_account + ".ldg"
