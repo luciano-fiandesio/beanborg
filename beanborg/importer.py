@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import csv
 import os
+import re
 import sys
 import traceback
 from dataclasses import dataclass
@@ -198,6 +199,63 @@ class Importer:
             for tx in transactions:
                 self.write_tx(exc, tx)
 
+    def fix_uncategorized_tx(self):
+        """
+        Fix uncategorized transactions in the ledger file.
+        """
+
+        # Get target account
+        account = self.args.rules.account
+        txs = JournalUtils().get_transactions_by_account_name(
+            self.args.rules.bc_file, account
+        )
+        # Get the filename of the first transaction
+        filename = txs[0].meta["filename"]
+
+        # filter out txs that have already been categorized
+        txs = Transactions(
+            [
+                tx
+                for tx in txs
+                if tx.postings[1].account == self.args.rules.default_expense
+            ]
+        )
+        Classifier(
+            self.args.rules.training_data,
+            self.args.rules.use_llm,
+            self.args.rules.bc_file,
+        ).classify(txs, self.args)
+
+        with open(filename, "r") as file:
+            content = file.read()
+            for tx in txs.getTransactions():
+                self.update_transaction(
+                    content, filename, tx.meta["md5"], tx.postings[1].account
+                )
+
+    def update_transaction(self, ledger_content, ledger_file, md5, new_category):
+
+        # Find the transaction block with the given md5
+        pattern = rf'(.*?md5: "{md5}".*?Expenses:Unknown.*?\n\n)'
+        match = re.search(pattern, ledger_content, re.DOTALL)
+
+        if match:
+            transaction_block = match.group(1)
+
+            # Replace 'Expenses:Unknown' with the new category
+            updated_block = re.sub(
+                r"(  Expenses:Unknown)", f"  {new_category}", transaction_block
+            )
+
+            # Replace the old block with the updated one
+            updated_content = ledger_content.replace(transaction_block, updated_block)
+
+            # Write the updated content back to the file
+            with open(ledger_file, "w") as file:
+                file.write(updated_content)
+        else:
+            print(f"Skipping transaction with md5 {md5} not found.")
+
     def import_transactions(self):
 
         options = eval_args("Parse bank csv file and import into beancount")
@@ -209,6 +267,10 @@ class Importer:
         if not os.path.isfile(import_csv):
             rprint("[red]file: %s does not exist![red]" % (import_csv))
             sys.exit(-1)
+
+        if options.fix_only:
+            self.fix_uncategorized_tx()
+            return
 
         rule_engine = self.init_rule_engine()
         tx_hashes = JournalUtils().transaction_hashes(self.args.rules.bc_file)
@@ -250,9 +312,11 @@ class Importer:
         self.stats.processed = filtered_txs.count()
 
         if filtered_txs.count_no_category(self.args.rules.default_expense) > 0:
-            Classifier(self.args.rules.training_data, self.args.rules.use_llm, self.args.rules.bc_file).classify(
-                filtered_txs, self.args
-            )
+            Classifier(
+                self.args.rules.training_data,
+                self.args.rules.use_llm,
+                self.args.rules.bc_file,
+            ).classify(filtered_txs, self.args)
 
         # write transactions to file
         account_file = working_account + ".ldg"
