@@ -145,31 +145,31 @@ The `indexes` section of the configuration file allows mapping each CSV "column"
 
 Note that the first index starts from `0`.
 
-| Property     | Description                                                                               | Default |    
-|--------------|-------------------------------------------------------------------------------------------|---------|
-| `date`         | The index corresponding to the date of the transaction.                                 |    0    |
-| `counterparty` | The index corresponding to the name of the counterparty of the transaction.             |    3    |
-| `amount`       | The index corresponding to the amount of the transaction (debit or credit).             |    4    |
-| `account`      | The index corresponding to the account of the transaction (e.g. the IBAN or ABA code).  |    4    |
-| `currency`     | The index corresponding to the currency of the transaction.                             |    5    |
-| `tx_type`      | The index corresponding to the transaction type.                                        |    2    |
+| Property       | Description                                                                               | Default |    
+|--------------- |-------------------------------------------------------------------------------------------|---------|
+| `date`         | The index corresponding to the date of the transaction.                                   |    0    |
+| `counterparty` | The index corresponding to the name of the counterparty of the transaction.               |    3    |
+| `amount`       | The index corresponding to the amount of the transaction (debit or credit).               |    4    |
+| `account`      | The index corresponding to the account of the transaction (e.g. the IBAN or ABA code).    |    4    |
+| `currency`     | The index corresponding to the currency of the transaction.                               |    5    |
+| `tx_type`      | The index corresponding to the transaction type.                                          |    2    |
 | `amount_in`    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the index corresponding to the credited amount.  |         |
-| `narration`    | The index corresponding to the narration or reference field of the transaction.         |         |
+| `narration`    | The index corresponding to the narration or reference field of the transaction.           |         |
 
 #### rules
 
 | Property                             | Description                                                                                                                | Default            |
 |-----------------                     |----------------------------------------------------------------------------------------------------------------------------|--------------------|
-| `beancount_file`                       | The master Beancount ledger file. This property is mandatory and it is required to by the duplication detection mechanism. | `main.ldg`         |
-| `rules_folder`                         | The folder name in which custom rules and look-up tables files are stored                                                  | `rules`            |
-| `account`                              | This property is normally used when a CSV file doesn't contain any account property (IBAN, ABA, account number, etc).      |                    |
-| `currency`                             | Force a default currency                                                                                                   |                    |
-| `default_expense`                      | Default expense account                                                                                                    | `Expenses:Unknown` |
-| `force_negative`                       | TODO                                                                                                                       | False              |
-| `invert_negative`                      | TODO                                                                                                                       | False              |
-| `origin_account`                       | Specifies the origin account of each transaction                                                                           |                    |
-| `ruleset`                              | List of rules to apply to the CSV file. See `rules` section.                                                               |                    |
-| `advanced_duplicate_detection`         | Enable the advanced duplication detection rule (see Advanced Duplicate Detection section)                                  | `true`             |
+| `beancount_file`                   | The master Beancount ledger file. This property is mandatory and it is required to by the duplication detection mechanism. | `main.ldg`         |
+| `rules_folder`                     | The folder name in which custom rules and look-up tables files are stored | `rules`            |
+| `account`                          | This property is normally used when a CSV file doesn't contain any account property (IBAN, ABA, account number, etc).      |                    |
+| `currency`                         | Force a default currency                                                                                                   |                    |
+| `default_expense`                  | Default expense account                                                                                                    | `Expenses:Unknown` |
+| `force_negative`                   | TODO                                                                                                                       | False              |
+| `invert_negative`                  | TODO                                                                                                                       | False              |
+| `origin_account`                   | Specifies the origin account of each transaction                                                                           |                    |
+| `ruleset`                          | List of rules to apply to the CSV file. See `rules` section.                                                               |                    |
+| `advanced_duplicate_detection`| Enable the advanced duplication detection rule (see Advanced Duplicate Detection section)                                  | `true`             |
 
 ## Rules
 
@@ -467,4 +467,44 @@ The advanced duplicate detection can be disabled by setting the `advanced_duplic
 ```yaml
 rules:
   advanced_duplicate_detection: false
-```      
+```
+
+### Machine Learning-Based Transaction Categorization
+
+Beanborg integrates an advanced Machine Learning (ML) mechanism to automatically categorize transactions when rule-based categorization is not possible. This system ensures that transactions are accurately classified by leveraging both machine learning and, optionally, the ChatGPT API.
+
+
+#### How It Works
+
+When Beanborg is unable to categorize a transaction through its predefined rules, it invokes an ML model trained on historical data to predict the most likely categories. This provides an additional layer of automation to reduce the need for manual intervention.
+
+- **Top Predictions**: The system generates up to three category predictions using the ML model. These predictions are displayed to the user, who can select one of the suggested categories or manually assign a category if none of the suggestions are appropriate.
+  
+- **Optional GPT Integration**: If enabled, a fourth prediction is provided by querying the ChatGPT API, offering an AI-based suggestion that complements the ML model's predictions.
+
+#### Prediction Workflow
+
+The categorization workflow follows a structured process:
+
+1. **Transaction Evaluation**: If no rule matches a transaction, Beanborg invokes the ML model to generate category predictions.
+2. **Top 3 ML Predictions**: The system displays the three most likely categories for the transaction based on the training dataset and the features extracted.
+3. **User Interaction**: The user can choose one of the three ML-generated categories or manually assign a category if the predictions are not suitable.
+4. **Optional GPT Suggestion**: If enabled, a fourth prediction generated by the ChatGPT API is displayed, offering an alternative suggestion.
+5. **Dynamic Learning**: The system updates the training dataset based on the user's final choice, enabling continuous model improvement.
+
+#### Enabling the ChatGPT API predictions
+
+To enable the optional ChatGPT API-based prediction, follow these steps:
+
+1. Set the `OPENAI_API_KEY` environment variable with your OpenAI API key.
+2. Update the configuration file to activate the feature by setting the `rules.use_llm` property to `true`.
+
+Your configuration should look like this:
+
+```yaml
+rules:
+  use_llm: true
+```
+
+With these settings enabled, Beanborg will include an additional category prediction generated by the ChatGPT API alongside the machine learning model’s top predictions.
+
