@@ -21,12 +21,16 @@ from beanborg.utils.string_utils import StringUtils
 
 class Classifier:
 
-    def __init__(self, data="training_data.csv", use_llm=False):
+    def __init__(self, data="training_data.csv", use_llm=False, bc_file=None):
         self.trainingDataFile = data
         self.use_llm = use_llm
-
+        self.bc_file = bc_file
         self.training_data = DataLoader.load_data(self.trainingDataFile)
-        self.model = TransactionModel(self.training_data, data)
+        try:
+            self.model = TransactionModel(self.training_data, data)
+        except Exception as e:
+            print(f"Error initializing TransactionModel: {e}")
+            self.model = None
 
         self.gpt_service = GPTService(self.use_llm)
         self.ui_service = UIService()
@@ -41,12 +45,14 @@ class Classifier:
         return pd.to_datetime(date).dayofweek
 
     def get_predictions(self, text, day_of_month, day_of_week):
+
+        if self.model is None:
+            return [], [], self.get_llm_prediction(text)
+
         # Use the TransactionModel for predictions
         top_labels, top_probs = self.model.predict(text, day_of_month, day_of_week)
-        if self.use_llm:
-            alternative_label = self.gpt_service.query_gpt_for_label(text, top_labels)
-        else:
-            alternative_label = "OpenAI not available"
+
+        alternative_label = self.get_llm_prediction(text, top_labels)
 
         # Check if OpenAI is not available
         if alternative_label == "OpenAI not available":
@@ -59,6 +65,16 @@ class Classifier:
             f"\n[red]You have [bold]{txs.count_no_category(args.rules.default_expense)}[/bold] "
             f"transactions without category, do you want to fix them now?[/red]"
         )
+
+    def get_llm_prediction(self, text):
+
+        if self.use_llm:
+            accounts = JournalUtils().get_accounts(self.bc_file)
+            alternative_label = self.gpt_service.query_gpt_for_label(text, accounts)
+        else:
+            alternative_label = "OpenAI not available"
+
+        return alternative_label
 
     def process_transaction(self, tx, index, txs, args):
         stripped_text = StringUtils.strip_digits(tx.payee.upper())
@@ -82,14 +98,29 @@ class Classifier:
             self.update_transaction(tx, index, txs, selected_category, narration)
             amount = tx.postings[0].units.number
             if selected_category != args.rules.default_expense:
-                self.model.update_training_data(
-                    tx.date,
-                    stripped_text,
-                    amount,
-                    selected_category,
-                    day_of_month,
-                    day_of_week,
-                )
+                if self.model is not None:
+                    self.model.update_training_data(
+                        tx.date,
+                        stripped_text,
+                        amount,
+                        selected_category,
+                        day_of_month,
+                        day_of_week,
+                    )
+                else:
+                    rowx = pd.Series(
+                        [tx.date, stripped_text, amount, selected_category],
+                        index=["date", "desc", "amount", "cat"],
+                    )
+                    row = pd.DataFrame(
+                        {
+                            "date": [tx.date],
+                            "desc": [stripped_text],
+                            "amount": [amount],
+                            "cat": [selected_category],
+                        }
+                    )
+                    DataLoader.add_training_row(self, self.trainingDataFile, row)
 
             return "continue"
 

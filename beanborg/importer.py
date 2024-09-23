@@ -250,7 +250,7 @@ class Importer:
         self.stats.processed = filtered_txs.count()
 
         if filtered_txs.count_no_category(self.args.rules.default_expense) > 0:
-            Classifier(self.args.rules.training_data, self.args.rules.use_llm).classify(
+            Classifier(self.args.rules.training_data, self.args.rules.use_llm, self.args.rules.bc_file).classify(
                 filtered_txs, self.args
             )
 
