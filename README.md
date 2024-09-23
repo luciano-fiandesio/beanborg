@@ -125,19 +125,19 @@ A Beanborg configuration must start with the `--- !Config` tag and has 3 main se
 The `csv` section of the configuration file determines the options related to the structure and location of the CVS file to import.
 Here are the list of options for the `csv` section:
 
-| Property      | Description                                                                                                                                                                                      | Default | Example             |
-|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|---------------------|
-| `download_path` | Full path to the folder to which the CSV is downloaded to at the beginning of the import process. This option is only required by the `bb_mover` script.                                      |         | "/home/john/download" |
-| name          | The name of the CSV file, at the time of download. Note that the name can be partial. For instance, is the CSV file is named "bank1-statement-03-2020", the `name` can be simply set to `bank1`. This option is only required by the `bb_mover` script.                                                         |         | `bank1`             |
-| `ref`           | Once the CVS file is imported into the staging area, it gets renamed using the value of `ref`. It is recommended to use a short string to identify the financial institution. This option is used by all the scripts.                                                                                   |         | `com`               |
-| `separator`     | The field delimiter used in the financial institution's CSV file.        | ,       |                     |
-| `currency_sep`  | The decimal separator used in the CSV file                                                                                                                                                       | .       |                     |
-| `date_format`   | Date format used in the CVS file. The format is based on  strftime directives: https://strftime.org/. Note that the value must be in quotes                                                      |         | "%d/%m/%Y"          |
-| `skip`          | Number of lines of the CSV file to skip during import                                                                                                    | 1       |                     |
-| `target`        | The folder name or path in which the CSV file is moved to during the first stage.    s                                                                                                            | tmp     |                     |
-| `archive`       | The folder name of path in which the CSV file is archived during the archive stage                                                                                                               | archive |                     |
-| `post_move_script`       | Path to a post-move script that is executed after the CSV file is moved into the work folder. The script must use a `shebang` (e.g. `#!/bin/bash`) in order to be executed.|  |`/home/tom/scripts/convert.sh` |
-| keep_original       | Keep the CSV file from the `download_path`. The default is to delete it after the move process. This option is only required by the `bb_mover` script.|`False`|`True` |
+| Property           | Description                                                                                                                                                                                                                                             | Default | Example                        |
+|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|--------------------------------|
+| `download_path`    | Full path to the folder to which the CSV is downloaded to at the beginning of the import process. This option is only required by the `bb_mover` script.                                                                                                |         | "/home/john/download"          |
+| name               | The name of the CSV file, at the time of download. Note that the name can be partial. For instance, is the CSV file is named "bank1-statement-03-2020", the `name` can be simply set to `bank1`. This option is only required by the `bb_mover` script. |         | `bank1`                        |
+| `ref`              | Once the CVS file is imported into the staging area, it gets renamed using the value of `ref`. It is recommended to use a short string to identify the financial institution. This option is used by all the scripts.                                   |         | `com`                          |
+| `separator`        | The field delimiter used in the financial institution's CSV file.                                                                                                                                                                                       | ,       |                                |
+| `currency_sep`     | The decimal separator used in the CSV file                                                                                                                                                                                                              | .       |                                |
+| `date_format`      | Date format used in the CVS file. The format is based on  strftime directives: https://strftime.org/. Note that the value must be in quotes                                                                                                             |         | "%d/%m/%Y"                     |
+| `skip`             | Number of lines of the CSV file to skip during import                                                                                                                                                                                                   | 1       |                                |
+| `target`           | The folder name or path in which the CSV file is moved to during the first stage.    s                                                                                                                                                                  | tmp     |                                |
+| `archive`          | The folder name of path in which the CSV file is archived during the archive stage                                                                                                                                                                      | archive |                                |
+| `post_move_script` | Path to a post-move script that is executed after the CSV file is moved into the work folder. The script must use a `shebang` (e.g. `#!/bin/bash`) in order to be executed.                                                                             |         | `/home/tom/scripts/convert.sh` |
+| keep_original      | Keep the CSV file from the `download_path`. The default is to delete it after the move process. This option is only required by the `bb_mover` script.                                                                                                  | `False` | `True`                         |
 
 #### indexes
 
@@ -145,31 +145,31 @@ The `indexes` section of the configuration file allows mapping each CSV "column"
 
 Note that the first index starts from `0`.
 
-| Property       | Description                                                                               | Default |    
-|--------------- |-------------------------------------------------------------------------------------------|---------|
-| `date`         | The index corresponding to the date of the transaction.                                   |    0    |
-| `counterparty` | The index corresponding to the name of the counterparty of the transaction.               |    3    |
-| `amount`       | The index corresponding to the amount of the transaction (debit or credit).               |    4    |
-| `account`      | The index corresponding to the account of the transaction (e.g. the IBAN or ABA code).    |    4    |
-| `currency`     | The index corresponding to the currency of the transaction.                               |    5    |
-| `tx_type`      | The index corresponding to the transaction type.                                          |    2    |
-| `amount_in`    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the index corresponding to the credited amount.  |         |
-| `narration`    | The index corresponding to the narration or reference field of the transaction.           |         |
+| Property       | Description                                                                                                                                                                   | Default |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| `date`         | The index corresponding to the date of the transaction.                                                                                                                       | 0       |
+| `counterparty` | The index corresponding to the name of the counterparty of the transaction.                                                                                                   | 3       |
+| `amount`       | The index corresponding to the amount of the transaction (debit or credit).                                                                                                   | 4       |
+| `account`      | The index corresponding to the account of the transaction (e.g. the IBAN or ABA code).                                                                                        | 4       |
+| `currency`     | The index corresponding to the currency of the transaction.                                                                                                                   | 5       |
+| `tx_type`      | The index corresponding to the transaction type.                                                                                                                              | 2       |
+| `amount_in`    | Some financial institutions, use separate indexes for debit and credit. In this case, it is possible to specify the index for the index corresponding to the credited amount. |         |
+| `narration`    | The index corresponding to the narration or reference field of the transaction.                                                                                               |         |
 
 #### rules
 
-| Property                             | Description                                                                                                                | Default            |
-|-----------------                     |----------------------------------------------------------------------------------------------------------------------------|--------------------|
-| `beancount_file`                   | The master Beancount ledger file. This property is mandatory and it is required to by the duplication detection mechanism. | `main.ldg`         |
-| `rules_folder`                     | The folder name in which custom rules and look-up tables files are stored | `rules`            |
-| `account`                          | This property is normally used when a CSV file doesn't contain any account property (IBAN, ABA, account number, etc).      |                    |
-| `currency`                         | Force a default currency                                                                                                   |                    |
-| `default_expense`                  | Default expense account                                                                                                    | `Expenses:Unknown` |
-| `force_negative`                   | TODO                                                                                                                       | False              |
-| `invert_negative`                  | TODO                                                                                                                       | False              |
-| `origin_account`                   | Specifies the origin account of each transaction                                                                           |                    |
-| `ruleset`                          | List of rules to apply to the CSV file. See `rules` section.                                                               |                    |
-| `advanced_duplicate_detection`| Enable the advanced duplication detection rule (see Advanced Duplicate Detection section)                                  | `true`             |
+| Property                       | Description                                                                                                                | Default            |
+|--------------------------------|----------------------------------------------------------------------------------------------------------------------------|--------------------|
+| `beancount_file`               | The master Beancount ledger file. This property is mandatory and it is required to by the duplication detection mechanism. | `main.ldg`         |
+| `rules_folder`                 | The folder name in which custom rules and look-up tables files are stored                                                  | `rules`            |
+| `account`                      | This property is normally used when a CSV file doesn't contain any account property (IBAN, ABA, account number, etc).      |                    |
+| `currency`                     | Force a default currency                                                                                                   |                    |
+| `default_expense`              | Default expense account                                                                                                    | `Expenses:Unknown` |
+| `force_negative`               | TODO                                                                                                                       | False              |
+| `invert_negative`              | TODO                                                                                                                       | False              |
+| `origin_account`               | Specifies the origin account of each transaction                                                                           |                    |
+| `ruleset`                      | List of rules to apply to the CSV file. See `rules` section.                                                               |                    |
+| `advanced_duplicate_detection` | Enable the advanced duplication detection rule (see Advanced Duplicate Detection section)                                  | `true`             |
 
 ## Rules
 
