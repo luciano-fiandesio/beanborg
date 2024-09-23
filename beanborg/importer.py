@@ -261,16 +261,16 @@ class Importer:
         options = eval_args("Parse bank csv file and import into beancount")
         self.args = init_config(options.file, options.debug)
 
+        if options.fix_only:
+            self.fix_uncategorized_tx()
+            return
+
         # transactions csv file to import
         import_csv = os.path.join(self.args.csv.target, f"{self.args.csv.ref}.csv")
 
         if not os.path.isfile(import_csv):
             rprint("[red]file: %s does not exist![red]" % (import_csv))
             sys.exit(-1)
-
-        if options.fix_only:
-            self.fix_uncategorized_tx()
-            return
 
         rule_engine = self.init_rule_engine()
         tx_hashes = JournalUtils().transaction_hashes(self.args.rules.bc_file)
