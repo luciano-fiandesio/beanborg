@@ -38,14 +38,16 @@ class UIService:
                 f"[bold cyan]{len(top_labels) + 1}.[/] ChatGPT: [cyan]{chatgpt_prediction}[/]"
             )
 
-        pred_panel = Panel(
-            "\n".join(predictions_content),
-            title="Predictions",
-            width=80,
-            expand=False,
-            border_style="magenta",
-            box=box.ROUNDED,
-        )
-
         console.print(tx_panel)
-        console.print(pred_panel)
+
+        # Only print the predictions panel if there are predictions to show
+        if predictions_content and (len(predictions_content) > 1 or chatgpt_prediction):
+            pred_panel = Panel(
+                "\n".join(predictions_content),
+                title="Predictions",
+                width=80,
+                expand=False,
+                border_style="magenta",
+                box=box.ROUNDED,
+            )
+            console.print(pred_panel)

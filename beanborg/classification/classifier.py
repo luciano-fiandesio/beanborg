@@ -126,8 +126,11 @@ class Classifier:
         return narration if narration else None
 
     def get_user_selection(self, top_labels, chatgpt_prediction, args):
+        options = len(top_labels) + (1 if chatgpt_prediction else 0)
+        if options == 0:
+            return self.handle_custom_input(args)
+
         while True:
-            options = len(top_labels) + (1 if chatgpt_prediction else 0)
             selected_number = input(
                 f"Enter your selection (1-{options}, or 'Enter' to choose the category, 'q' to quit): "
             )
