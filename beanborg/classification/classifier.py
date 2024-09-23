@@ -52,7 +52,7 @@ class Classifier:
         # Use the TransactionModel for predictions
         top_labels, top_probs = self.model.predict(text, day_of_month, day_of_week)
 
-        alternative_label = self.get_llm_prediction(text, top_labels)
+        alternative_label = self.get_llm_prediction(text)
 
         return top_labels, top_probs, alternative_label
 
