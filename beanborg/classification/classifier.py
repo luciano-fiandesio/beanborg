@@ -54,10 +54,6 @@ class Classifier:
 
         alternative_label = self.get_llm_prediction(text, top_labels)
 
-        # Check if OpenAI is not available
-        if alternative_label == "OpenAI not available":
-            alternative_label = None
-
         return top_labels, top_probs, alternative_label
 
     def confirm_classification(self, txs, args):
@@ -69,10 +65,13 @@ class Classifier:
     def get_llm_prediction(self, text):
 
         if self.use_llm:
+            # This function queries the GPT service for a label prediction based on the provided text.
+            # It uses the available accounts from the journal to help the GPT service make a more informed prediction.
+            # If the GPT service is not available, it returns None.
             accounts = JournalUtils().get_accounts(self.bc_file)
             alternative_label = self.gpt_service.query_gpt_for_label(text, accounts)
         else:
-            alternative_label = "OpenAI not available"
+            alternative_label = None
 
         return alternative_label
 
@@ -108,10 +107,6 @@ class Classifier:
                         day_of_week,
                     )
                 else:
-                    rowx = pd.Series(
-                        [tx.date, stripped_text, amount, selected_category],
-                        index=["date", "desc", "amount", "cat"],
-                    )
                     row = pd.DataFrame(
                         {
                             "date": [tx.date],
