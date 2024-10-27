@@ -1,5 +1,6 @@
 import os
 import sys
+
 import yaml
 
 
@@ -15,7 +16,9 @@ class Rules:
         invert_negative=None,
         origin_account=None,
         ruleset=[],
-        advanced_duplicate_detection=None
+        advanced_duplicate_detection=None,
+        training_data=None,
+        use_llm=None,
     ):
         self.bc_file = bc_file
         self.rules_folder = rules_folder
@@ -27,6 +30,8 @@ class Rules:
         self.origin_account = origin_account
         self.ruleset = ruleset
         self.advanced_duplicate_detection = advanced_duplicate_detection
+        self.training_data = training_data
+        self.use_llm = use_llm
 
 
 class Indexes:
@@ -99,8 +104,7 @@ class Config:
             csv_data.get("target", "tmp"),
             csv_data.get("archive_path", "archive"),
             csv_data.get("post_move_script"),
-            csv_data.get("keep_original", False)
-
+            csv_data.get("keep_original", False),
         )
 
         idx = values.get("indexes", dict())
@@ -128,7 +132,9 @@ class Config:
             rls.get("invert_negative", False),
             rls.get("origin_account", None),
             rls.get("ruleset", []),
-            rls.get("advanced_duplicate_detection", True)
+            rls.get("advanced_duplicate_detection", True),
+            rls.get("training_data", "training_data.csv"),
+            rls.get("use_llm", False),
         )
 
         return Config(csv, indexes, rules)
@@ -136,7 +142,7 @@ class Config:
 
 def init_config(file, debug):
 
-    yaml.add_constructor(u"!Config", Config.load)
+    yaml.add_constructor("!Config", Config.load)
 
     if not os.path.isfile(file):
         print("file: %s does not exist!" % (file))
@@ -145,7 +151,7 @@ def init_config(file, debug):
     with open(file, "r") as file:
         try:
             config = yaml.load(file, Loader=yaml.FullLoader)
-        except yaml.scanner.ScannerError as ex:
+        except yaml.scanner.ScannerError:
             print("file: %s is malformed, please check" % (file.name))
             sys.exit(-1)
 

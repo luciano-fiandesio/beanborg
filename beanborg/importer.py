@@ -1,29 +1,32 @@
 # -*- coding: utf-8 -*-
 import csv
 import os
+import re
 import sys
-from random import SystemRandom
 import traceback
 from dataclasses import dataclass
-from beanborg.arg_parser import eval_args
-from beanborg.config import init_config
+from datetime import datetime, timedelta
+from random import SystemRandom
+
+from beancount.core.data import Amount
+from beancount.parser.printer import format_entry
 from rich import print as rprint
 from rich.table import Table
-from datetime import datetime, timedelta
-from beancount.parser.printer import format_entry
-from beancount.core.data import Amount
+
+from beanborg.arg_parser import eval_args
+from beanborg.classification.classifier import Classifier
+from beanborg.config import init_config
 from beanborg.handlers.amount_handler import AmountHandler
+from beanborg.model.transactions import Transactions
 from beanborg.rule_engine.Context import Context
 from beanborg.rule_engine.rules_engine import RuleEngine
-from beanborg.utils.hash_utils import hash
 from beanborg.utils.duplicate_detector import (
-    init_duplication_store,
     hash_tuple,
-    to_tuple,
+    init_duplication_store,
     print_duplication_warning,
+    to_tuple,
 )
-from beanborg.classification.classifier import Classifier
-from beanborg.model.transactions import Transactions
+from beanborg.utils.hash_utils import hash
 from beanborg.utils.journal_utils import JournalUtils
 
 
@@ -78,10 +81,12 @@ class Importer:
 
         folder = self.args.rules.rules_folder
 
-        if len(self.args.rules.ruleset) > 1 \
-                and not os.path.isfile(folder + "/asset.rules") \
-                and self.args.rules.account is None \
-                and self.args.rules.origin_account is None:
+        if (
+            len(self.args.rules.ruleset) > 1
+            and not os.path.isfile(folder + "/asset.rules")
+            and self.args.rules.account is None
+            and self.args.rules.origin_account is None
+        ):
 
             rprint(
                 "[red]Please specify an account in your config file "
@@ -117,8 +122,7 @@ class Importer:
         table.add_row("tx skipped by user", str(self.stats.skipped_by_user))
 
         if self.stats.error > 0:
-            table.add_row("error", str(
-                self.stats.error), style="red")
+            table.add_row("error", str(self.stats.error), style="red")
         else:
             table.add_row("error", str(self.stats.error))
         table.add_row("tx without category", str(self.stats.no_category))
@@ -127,7 +131,7 @@ class Importer:
 
     def get_account(self, row):
         """get the account value for the given csv line
-           or use the specified account
+        or use the specified account
         """
         if self.args.rules.account:
             return self.args.rules.account
@@ -136,7 +140,7 @@ class Importer:
 
     def get_currency(self, row):
         """get the currency value for the given csv line or
-           use the specified currency
+        use the specified currency
         """
         if self.args.rules.currency:
             return self.args.rules.currency
@@ -144,10 +148,11 @@ class Importer:
 
     def warn_hash_collision(self, row, md5):
         rprint(
-            '[red]warning[/red]: '
-            'a transaction with identical hash exists in '
-            'the journal: '
-            f'[bold]{md5}[/bold]')
+            "[red]warning[/red]: "
+            "a transaction with identical hash exists in "
+            "the journal: "
+            f"[bold]{md5}[/bold]"
+        )
         self.log_error(row)
         self.stats.hash_collision += 1
 
@@ -164,8 +169,8 @@ class Importer:
     def verify_accounts_count(self):
         if len(self.accounts) > 1 and len(self.transactions) > 0:
             rprint(
-                '[red]Expecting only one account in csv'
-                f'file, found: {str(len(self.accounts))}[/red]'
+                "[red]Expecting only one account in csv"
+                f"file, found: {str(len(self.accounts))}[/red]"
             )
 
     def verify_unique_transactions(self, account):
@@ -194,15 +199,74 @@ class Importer:
             for tx in transactions:
                 self.write_tx(exc, tx)
 
+    def fix_uncategorized_tx(self):
+        """
+        Fix uncategorized transactions in the ledger file.
+        """
+
+        # Get target account
+        account = self.args.rules.account
+        txs = JournalUtils().get_transactions_by_account_name(
+            self.args.rules.bc_file, account
+        )
+        # Get the filename of the first transaction
+        filename = txs[0].meta["filename"]
+
+        # filter out txs that have already been categorized
+        txs = Transactions(
+            [
+                tx
+                for tx in txs
+                if tx.postings[1].account == self.args.rules.default_expense
+            ]
+        )
+        Classifier(
+            self.args.rules.training_data,
+            self.args.rules.use_llm,
+            self.args.rules.bc_file,
+        ).classify(txs, self.args)
+
+        with open(filename, "r") as file:
+            content = file.read()
+            for tx in txs.getTransactions():
+                self.update_transaction(
+                    content, filename, tx.meta["md5"], tx.postings[1].account
+                )
+
+    def update_transaction(self, ledger_content, ledger_file, md5, new_category):
+
+        # Find the transaction block with the given md5
+        pattern = rf'(.*?md5: "{md5}".*?Expenses:Unknown.*?\n\n)'
+        match = re.search(pattern, ledger_content, re.DOTALL)
+
+        if match:
+            transaction_block = match.group(1)
+
+            # Replace 'Expenses:Unknown' with the new category
+            updated_block = re.sub(
+                r"(  Expenses:Unknown)", f"  {new_category}", transaction_block
+            )
+
+            # Replace the old block with the updated one
+            updated_content = ledger_content.replace(transaction_block, updated_block)
+
+            # Write the updated content back to the file
+            with open(ledger_file, "w") as file:
+                file.write(updated_content)
+        else:
+            print(f"Skipping transaction with md5 {md5} not found.")
+
     def import_transactions(self):
 
         options = eval_args("Parse bank csv file and import into beancount")
         self.args = init_config(options.file, options.debug)
 
+        if options.fix_only:
+            self.fix_uncategorized_tx()
+            return
+
         # transactions csv file to import
-        import_csv = os.path.join(
-            self.args.csv.target,
-            self.args.csv.ref + ".csv")
+        import_csv = os.path.join(self.args.csv.target, f"{self.args.csv.ref}.csv")
 
         if not os.path.isfile(import_csv):
             rprint("[red]file: %s does not exist![red]" % (import_csv))
@@ -212,8 +276,7 @@ class Importer:
         tx_hashes = JournalUtils().transaction_hashes(self.args.rules.bc_file)
 
         with open(import_csv) as csv_file:
-            csv_reader = csv.reader(
-                csv_file, delimiter=self.args.csv.separator)
+            csv_reader = csv.reader(csv_file, delimiter=self.args.csv.separator)
             for _ in range(self.args.csv.skip):
                 next(csv_reader)  # skip the line
             for row in csv_reader:
@@ -249,7 +312,11 @@ class Importer:
         self.stats.processed = filtered_txs.count()
 
         if filtered_txs.count_no_category(self.args.rules.default_expense) > 0:
-            Classifier().classify(filtered_txs, self.args)
+            Classifier(
+                self.args.rules.training_data,
+                self.args.rules.use_llm,
+                self.args.rules.bc_file,
+            ).classify(filtered_txs, self.args)
 
         # write transactions to file
         account_file = working_account + ".ldg"
@@ -268,7 +335,8 @@ class Importer:
                 "please check that the `Replace_Asset` rule "
                 "is in use for this account or set the "
                 " `origin_account` property "
-                "in the config file.")
+                "in the config file."
+            )
 
         return tx
 
@@ -291,13 +359,11 @@ class Importer:
         new_posting = tx.postings[0]._replace(
             units=Amount(amount, self.get_currency(row))
         )
-        tx = tx._replace(
-            postings=[new_posting] + [tx.postings[1]])
+        tx = tx._replace(postings=[new_posting] + [tx.postings[1]])
 
         # add narration
         if self.args.indexes.narration:
-            tx = tx._replace(
-                narration=row[self.args.indexes.narration].strip())
+            tx = tx._replace(narration=row[self.args.indexes.narration].strip())
 
         if self.debug():
             print(tx)

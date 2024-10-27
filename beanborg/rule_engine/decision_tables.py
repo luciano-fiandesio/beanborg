@@ -25,7 +25,7 @@ def init_decision_table(file, debug=False):
 
 def decomment(csvfile):
     for row in csvfile:
-        raw = row.split('#')[0].strip()
+        raw = row.split("#")[0].strip()
         if raw:
             yield row
 
@@ -39,11 +39,10 @@ def resolve_from_decision_table(table, string, default):
         "endsWith": _endsWith,
         "contains": _contains,
         "contains_ic": _contains_ignore_case,
-
         "eq": _equals,
         "sw": _startsWith,
         "ew": _endsWith,
-        "co": _contains
+        "co": _contains,
     }
     for k in table.keys():
         t = table[k]

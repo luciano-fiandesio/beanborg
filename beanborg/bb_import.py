@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__copyright__ = "Copyright (C) 2023  Luciano Fiandesio"
+__copyright__ = "Copyright (C) 2024  Luciano Fiandesio"
 __license__ = "GNU GPLv2"
 
 
