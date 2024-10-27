@@ -61,3 +61,4 @@ class BeanborgImporter:
 def main():
     """Main function to run the beanborg importer."""
     fire.Fire(BeanborgImporter)
+

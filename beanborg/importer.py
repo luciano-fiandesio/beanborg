@@ -268,69 +268,76 @@ class Importer:
             debug: Enable debug mode
             fix_only: Only fix uncategorized transactions
         """
-        self.args = init_config(file, debug)
+        try:
+            self.args = init_config(file, debug)
 
-        if fix_only:
-            self._fix_uncategorized_tx()
-            return
+            if fix_only:
+                self._fix_uncategorized_tx()
+                return
 
-        # transactions csv file to import
-        import_csv = os.path.join(self.args.csv.target, f"{self.args.csv.ref}.csv")
+            # transactions csv file to import
+            import_csv = os.path.join(self.args.csv.target, f"{self.args.csv.ref}.csv")
 
-        if not os.path.isfile(import_csv):
-            rprint("[red]file: %s does not exist![red]" % (import_csv))
+            if not os.path.isfile(import_csv):
+                rprint("[red]file: %s does not exist![red]" % (import_csv))
+                sys.exit(-1)
+
+            rule_engine = self.init_rule_engine()
+            tx_hashes = JournalUtils().transaction_hashes(self.args.rules.bc_file)
+
+            with open(import_csv) as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=self.args.csv.separator)
+                for _ in range(self.args.csv.skip):
+                    next(csv_reader)  # skip the line
+                for row in csv_reader:
+                    self.stats.tx_in_file += 1
+                    try:
+                        # calculate hash of csv row
+                        md5 = hash(row)
+
+                        # keep track of the accounts for each tx:
+                        # the system expects one account per imported file
+                        res_account = self.get_account(row)
+                        if self.debug():
+                            print("resolved account: " + str(res_account))
+                        self.accounts.add(res_account)
+
+                        if md5 not in tx_hashes:
+                            self._process_tx(row, md5, rule_engine)
+                        else:
+                            self.warn_hash_collision(row, md5)
+
+                    except Exception as e:
+                        print("error: " + str(e))
+                        self._log_error(row)
+                        self.stats.error += 1
+                        if self.debug():
+                            traceback.print_exc()
+
+            self._verify_accounts_count()
+            working_account = self.accounts.pop()
+            filtered_txs = self._verify_unique_transactions(working_account)
+
+            self.stats.skipped_by_user = self.txs.count() - filtered_txs.count()
+            self.stats.processed = filtered_txs.count()
+
+            if filtered_txs.count_no_category(self.args.rules.default_expense) > 0:
+                Classifier(
+                    self.args.rules.training_data,
+                    self.args.rules.use_llm,
+                    self.args.rules.bc_file,
+                ).classify(filtered_txs, self.args)
+
+            # write transactions to file
+            account_file = working_account + ".ldg"
+            self._write_to_ledger(account_file, filtered_txs.get_transactions())
+            self._print_summary()
+        except Exception as e:
+            rprint(f"[red]Error: {e}[/red]")
+            if self.debug:
+                # show trace
+                traceback.print_exc()
             sys.exit(-1)
-
-        rule_engine = self.init_rule_engine()
-        tx_hashes = JournalUtils().transaction_hashes(self.args.rules.bc_file)
-
-        with open(import_csv) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=self.args.csv.separator)
-            for _ in range(self.args.csv.skip):
-                next(csv_reader)  # skip the line
-            for row in csv_reader:
-                self.stats.tx_in_file += 1
-                try:
-                    # calculate hash of csv row
-                    md5 = hash(row)
-
-                    # keep track of the accounts for each tx:
-                    # the system expects one account per imported file
-                    res_account = self.get_account(row)
-                    if self.debug():
-                        print("resolved account: " + str(res_account))
-                    self.accounts.add(res_account)
-
-                    if md5 not in tx_hashes:
-                        self._process_tx(row, md5, rule_engine)
-                    else:
-                        self.warn_hash_collision(row, md5)
-
-                except Exception as e:
-                    print("error: " + str(e))
-                    self._log_error(row)
-                    self.stats.error += 1
-                    if self.debug():
-                        traceback.print_exc()
-
-        self._verify_accounts_count()
-        working_account = self.accounts.pop()
-        filtered_txs = self._verify_unique_transactions(working_account)
-
-        self.stats.skipped_by_user = self.txs.count() - filtered_txs.count()
-        self.stats.processed = filtered_txs.count()
-
-        if filtered_txs.count_no_category(self.args.rules.default_expense) > 0:
-            Classifier(
-                self.args.rules.training_data,
-                self.args.rules.use_llm,
-                self.args.rules.bc_file,
-            ).classify(filtered_txs, self.args)
-
-        # write transactions to file
-        account_file = working_account + ".ldg"
-        self._write_to_ledger(account_file, filtered_txs.get_transactions())
-        self._print_summary()
 
     def _validate(self, tx):
         """Handle the origin account.

@@ -31,6 +31,7 @@ class Rules:
         training_data: Path to training data file
         use_llm: Whether to use language model for classification
     """
+
     bc_file: Optional[str] = None
     rules_folder: Optional[str] = None
     account: Optional[str] = None
@@ -63,6 +64,7 @@ class Indexes:
         amount_in: Index of incoming amount column
         narration: Index of narration column
     """
+
     date: Optional[int] = None
     counterparty: Optional[int] = None
     amount: Optional[int] = None
@@ -89,6 +91,7 @@ class Csv:
         post_script_path: Path to post-processing script
         keep_original: Whether to keep original files
     """
+
     download_path: str
     name: str
     ref: str
@@ -114,13 +117,14 @@ class Config:
         rules: Processing rules configuration
         debug: Debug mode flag
     """
+
     csv: Csv
     indexes: Indexes
     rules: Rules
     debug: bool = False
 
     @staticmethod
-    def load(loader: yaml.Loader, node: yaml.Node) -> 'Config':
+    def load(loader: yaml.Loader, node: yaml.Node) -> "Config":
         """Load configuration from YAML node.
 
         Args:
@@ -136,7 +140,7 @@ class Config:
         values = loader.construct_mapping(node, deep=True)
 
         # Validate required sections
-        if 'csv' not in values:
+        if "csv" not in values:
             raise ValueError("Missing required 'csv' section in configuration")
 
         csv_data = values["csv"]
@@ -150,7 +154,7 @@ class Config:
             target=csv_data.get("target", "tmp"),
             archive=csv_data.get("archive_path", "archive"),
             post_script_path=csv_data.get("post_move_script"),
-            keep_original=csv_data.get("keep_original", False)
+            keep_original=csv_data.get("keep_original", False),
         )
 
         idx = values.get("indexes", {})
@@ -162,7 +166,7 @@ class Config:
             currency=idx.get("currency", 5),
             tx_type=idx.get("tx_type", 2),
             amount_in=idx.get("amount_in"),
-            narration=idx.get("narration")
+            narration=idx.get("narration"),
         )
 
         rls = values.get("rules", {})
@@ -178,7 +182,7 @@ class Config:
             ruleset=rls.get("ruleset", []),
             advanced_duplicate_detection=rls.get("advanced_duplicate_detection", True),
             training_data=rls.get("training_data", "training_data.csv"),
-            use_llm=rls.get("use_llm", False)
+            use_llm=rls.get("use_llm", False),
         )
 
         return Config(csv, indexes, rules)

@@ -21,6 +21,7 @@ from beanborg.utils.string_utils import StringUtils
 
 class Classifier:
     """Classify transactions using a machine learning model or a LLM."""
+
     def __init__(self, data="training_data.csv", use_llm=False, bc_file=None):
         """Initialize the classifier."""
         self.trainingDataFile = data
@@ -143,7 +144,9 @@ class Classifier:
                 )
             return self._handle_custom_input(args)
 
-    def _handle_numeric_selection(self, selected_number, top_labels, chatgpt_prediction):
+    def _handle_numeric_selection(
+        self, selected_number, top_labels, chatgpt_prediction
+    ):
         if chatgpt_prediction and selected_number == len(top_labels) + 1:
             return chatgpt_prediction
         elif 1 <= selected_number <= len(top_labels):
@@ -184,14 +187,14 @@ class Classifier:
         new_tx = tx._replace(postings=new_postings)
         if narration:
             new_tx = new_tx._replace(narration=narration)
-        txs.getTransactions()[index] = new_tx
+        txs.get_transactions()[index] = new_tx
 
     def classify(self, txs, args):
         """Classify transactions."""
         if not self._confirm_classification(txs, args):
             return
 
-        for i, tx in enumerate(txs.getTransactions()):
+        for i, tx in enumerate(txs.get_transactions()):
             if self._has_no_category(tx, args):
                 result = self._process_transaction(tx, i, txs, args)
                 if result == "quit":
