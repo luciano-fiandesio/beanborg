@@ -426,7 +426,34 @@ To ignore transactions where the value in index 4 (fifth column) matches `abc010
 - The index in the CSV file starts from `0`, so `4` refers to the fifth column.
 - The values specified in `ignore_string_at_pos` are case-insensitive, meaning `abc0102` and `ABC0102` would both be matched and ignored.
 
+#### IgnoreByContainsStringAtPos
 
+Ignores a transaction if the specified value is present in the specified index of the CSV file.
+The comparison is case-insensitive (meaning "mega" and "MEGA" will be matched).
+
+For instance, given this csv entry:
+
+`10.12.2022,mega supermarket,20US$`
+
+and this rule:
+
+```
+-  name: Ignore_By_ContainsStringAtPos
+        ignore_string_contains_at_pos:
+            - mega;1
+```
+
+The row will be ignored, because the string "mega" is part of the index at position 1.
+
+Note that this rule supports multiple string specifications.
+
+Example:
+```
+-  name: Ignore_By_ContainsStringAtPos
+    ignore_string_contains_at_pos:
+        - val;3
+        - another val;6
+```
 
 
 ### Custom rules

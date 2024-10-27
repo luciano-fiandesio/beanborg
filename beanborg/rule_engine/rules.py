@@ -386,7 +386,7 @@ class IgnoreByContainsStringAtPos(Rule):
     and this rule:
 
     -  name: Ignore_By_ContainsStringAtPos
-           ignore_string_at_pos:
+           ignore_string_contains_at_pos:
                - mega;1
 
     The row will be ignored, because the string "mega" is part of
@@ -396,7 +396,7 @@ class IgnoreByContainsStringAtPos(Rule):
 
     Example:
         -  name: Ignore_By_ContainsStringAtPos
-           ignore_string_at_pos:
+           ignore_string_contains_at_pos:
                - val;3
                - another val;6
     """
