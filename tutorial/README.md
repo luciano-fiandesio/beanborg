@@ -131,11 +131,11 @@ Append the following configuration to the `eagle.yaml` file:
 ```
 rules:
   ruleset:
-    - name: Replace_Expense
+    - name: ReplaceExpense
 ```
 
 Before importing the CSV data, we need one last step: a configuration file (named `asset.rules`)  that helps Beanborg associate the bank account asset definition (`Assets:Bank1:Bob:Current`, which is the bank account defined in Beanborg used in this tutorial) to the bank account identifier in the CSV file (in this tutorial, the IBAN number).
-Note that this file is required by the `Replace_Asset` rule, which is automatically executed, even if it's not specified in the rules list.
+Note that this file is required by the `ReplaceAsset` rule, which is automatically executed, even if it's not specified in the rules list.
 
 In Beanborg, all configuration files are placed into the `rules` folder - note that the folder name can be changed using the `rules_folder` property of the `rules` configuration.
 
@@ -162,10 +162,10 @@ bb_import -f config/eagle.yaml
 The script should exit immediately with the following error:
 
 ```
-file: rules/account.rules does not exist! - The 'Replace_Expense' rules requires the account.rules file.
+file: rules/account.rules does not exist! - The 'ReplaceExpense' rules requires the account.rules file.
 ```
 
-The `Replace_Expense` rules requires an additional look-up table file to map counterparty names to Expense categories.
+The `ReplaceExpense` rules requires an additional look-up table file to map counterparty names to Expense categories.
 This file (named `account.rules`) should be located in the `rules` folder.
 
 
@@ -229,10 +229,10 @@ Bank Of Mars;contains;Assets:Cash:Bob
 ```
 
 but this is probably not such a good idea, because we may have multiple type of transactions from `Bank of Mars`, for instance bank fees.
-Since the CSV entry clearly specifies `Cash Withdrawal` as transaction type, we can simply add a new `Set_Accounts` rule that makes use of the transaction type to assign the accounts to the transaction; add the following rule definition to the `eagle.yaml`:
+Since the CSV entry clearly specifies `Cash Withdrawal` as transaction type, we can simply add a new `SetAccounts` rule that makes use of the transaction type to assign the accounts to the transaction; add the following rule definition to the `eagle.yaml`:
 
 ```
-- name: Set_Accounts
+- name: SetAccounts
       from: Assets:Bank1:Bob:Current
       to: Assets:Cash:Bob
       csv_index: 2
@@ -240,7 +240,7 @@ Since the CSV entry clearly specifies `Cash Withdrawal` as transaction type, we 
 ```
 
 Let's re-run the import script `bb_import -f config/eagle.yaml`: this time all four transactions should be properly categorized.
-The `Set_Accounts` rules uses the `csv_index` to determine which index of the csv to analyze (remember, the indexes count starts from `0`) and the `csv_values` determines the string that should match the value of the index. If a match is found, both `from` and `to` accounts are set on the transaction.
+The `SetAccounts` rules uses the `csv_index` to determine which index of the csv to analyze (remember, the indexes count starts from `0`) and the `csv_values` determines the string that should match the value of the index. If a match is found, both `from` and `to` accounts are set on the transaction.
 
 ## Archive the CSV bank file
 

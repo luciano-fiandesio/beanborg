@@ -1,34 +1,102 @@
 # -*- coding: utf-8 -*-
+"""Rule engine module for transaction processing.
+
+This module provides functionality for loading, managing, and executing rules
+on financial transactions. It supports both built-in and custom rules, and
+handles rule initialization and execution in a sequential manner.
+"""
 
 import fnmatch
+import logging
 import os
 import sys
 import uuid
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from beancount.core.data import Posting, Transaction
 
 from .Context import Context
-from .rules import *
+from .rules import (
+    IgnoreByContainsStringAtPos,
+    IgnoreByPayee,
+    IgnoreByStringAtPos,
+    ReplaceAsset,
+    ReplaceExpense,
+    ReplacePayee,
+    Rule,
+    SetAccounts,
+)
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Constants
+RULE_FILE_PATTERN: str = "*.py"
+DEFAULT_RULES: List[str] = ["ReplaceAsset"]
 
 
 @dataclass
 class RuleDef:
-    rule: str
-    attributes: Dict[str, List[str]]
+    """Definition of a rule and its attributes.
 
-    def get(self, key):
+    Attributes:
+        rule: The rule class or function to be executed
+        attributes: Dictionary of rule properties and their values
+    """
+
+    rule: Any  # Type hint could be more specific based on rule structure
+    attributes: Optional[Dict[str, List[str]]]
+
+    def get(self, key: str) -> List[str]:
+        """Get rule attributes by key.
+
+        Args:
+            key: Attribute key to lookup
+
+        Returns:
+            List of attribute values
+
+        Raises:
+            KeyError: If key doesn't exist in attributes
+        """
+        if self.attributes is None:
+            return []
         return self.attributes[key]
 
 
-class Rule_Init(Rule):
-    def __init__(self, name, context):
-        Rule.__init__(self, name, context)
+class RuleInit(Rule):
+    """Initialization rule that creates a basic transaction structure."""
 
-    def execute(self, csv_line, transaction=None):
+    def __init__(self, name: str, context: Context):
+        """Initialize the rule.
+
+        Args:
+            name: Name of the rule
+            context: Context object containing configuration
+        """
+        super().__init__(name, context)
+
+    def execute(
+        self, csv_line: Dict[str, str], transaction: Optional[Transaction] = None
+    ) -> Tuple[bool, Transaction]:
+        """Create an empty transaction structure.
+
+        Args:
+            csv_line: CSV line data (unused in this rule)
+            transaction: Optional existing transaction (unused in this rule)
+
+        Returns:
+            Tuple of (False, empty Transaction)
+        """
+        empty_posting = Posting(
+            account=None,
+            units=None,
+            cost=None,
+            price=None,
+            flag=None,
+            meta=None,
+        )
 
         return (
             False,
@@ -40,104 +108,198 @@ class Rule_Init(Rule):
                 narration=None,
                 tags=None,
                 links=None,
-                postings=[
-                    Posting(
-                        account=None,
-                        units=None,
-                        cost=None,
-                        price=None,
-                        flag=None,
-                        meta=None,
-                    ),
-                    Posting(
-                        account=None,
-                        units=None,
-                        cost=None,
-                        price=None,
-                        flag=None,
-                        meta=None,
-                    ),
-                ],
+                postings=[empty_posting, empty_posting],
             ),
         )
 
 
+@dataclass
+class RuleErrorContext:
+    """Context information for rule errors."""
+
+    rule_name: Optional[str] = None
+    file_path: Optional[str] = None
+    line_number: Optional[int] = None
+
+
+class RuleEngineError(Exception):
+    """Base exception for rule engine errors."""
+
+    def __init__(self, message: str, context: Optional[RuleErrorContext] = None):
+        """Initialize the exception."""
+        self.context = context or RuleErrorContext()
+        super().__init__(message)
+
+
+class RuleLoadError(RuleEngineError):
+    """Exception raised when rule loading fails."""
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        context_info = []
+        if self.context.rule_name:
+            context_info.append(f"rule='{self.context.rule_name}'")
+        if self.context.file_path:
+            context_info.append(f"file='{self.context.file_path}'")
+        if self.context.line_number:
+            context_info.append(f"line={self.context.line_number}")
+
+        context_str = f" ({', '.join(context_info)})" if context_info else ""
+        return f"{super().__str__()}{context_str}"
+
+
 class RuleEngine:
+    """Engine for loading and executing transaction processing rules.
 
-    def handle(self, cr):
+    This class manages the loading of both built-in and custom rules,
+    and provides methods to execute these rules on transaction data.
+    """
 
-        return cr
+    # Define known rules mapping
+    BUILT_IN_RULES = {
+        "ReplaceAsset": ReplaceAsset,
+        "ReplaceExpense": ReplaceExpense,
+        "ReplacePayee": ReplacePayee,
+        "IgnoreByPayee": IgnoreByPayee,
+        "IgnoreByStringAtPos": IgnoreByStringAtPos,
+        "IgnoreByContainsStringAtPos": IgnoreByContainsStringAtPos,
+        "SetAccounts": SetAccounts,
+    }
 
     def __init__(self, ctx: Context):
+        """Initialize the rule engine.
 
+        Args:
+            ctx: Context object containing configuration
+
+        Raises:
+            Warning: If no rules file is specified
+        """
         self._ctx = ctx
-        self.rules = {}
+        self.rules: Dict[str, RuleDef] = {}
 
-        custom_rules = self.load_custom_rules()
+        self._load_rules()
+        self._add_default_rules()
 
-        if self._ctx.ruleset is None:
-            print(
-                "\u26A0"
-                + " no rules file spefified for this financial \
-                institution"
-            )
-            self.rules = {}
-        else:
-            for yrule in self._ctx.ruleset:
-                rule_props = {}
-                for key in yrule:
-                    if key == "name":
-                        rule_name = yrule["name"]
+    def _load_rules(self) -> None:
+        """Load rules from configuration and custom rules directory."""
+        logger.debug("Loading rules from configuration")
+        try:
+            custom_rules = self._load_custom_rules()
+
+            if not self._ctx.ruleset:
+                print("\u26A0 No rules file specified for this financial institution")
+                return
+
+            for rule_config in self._ctx.ruleset:
+                rule_name = rule_config.get("name")
+                if not rule_name:
+                    logger.warning("Skipping rule with no name in configuration")
+                    continue
+                logger.debug("Processing rule configuration: %s", rule_name)
+                rule_props = {
+                    key: value for key, value in rule_config.items() if key != "name"
+                }
+                try:
+                    if rule_name in custom_rules:
+                        logger.debug("Loading custom rule: %s", rule_name)
+                        self.rules[rule_name] = RuleDef(
+                            custom_rules[rule_name], rule_props
+                        )
+                    elif rule_name in self.BUILT_IN_RULES:
+                        # Load from built-in rules
+                        logger.debug("Loading built-in rule: %s", rule_name)
+                        unique_name = f"{rule_name}|{uuid.uuid4().hex.upper()[:6]}"
+                        self.rules[unique_name] = RuleDef(
+                            self.BUILT_IN_RULES[rule_name], rule_props
+                        )
                     else:
-                        rule_props[key] = yrule.get(key)
+                        logger.error("Unknown rule: %s", rule_name)
+                        raise RuleLoadError(f"Unknown rule type: {rule_name}")
+                except Exception as e:
+                    raise RuleLoadError(f"Failed to load rule '{rule_name}'") from e
+        except Exception as e:
+            if not isinstance(e, RuleLoadError):
+                raise RuleLoadError("Failed to load rules") from e
+            raise
 
-                if rule_name in custom_rules:
-                    self.rules[rule_name] = RuleDef(custom_rules[rule_name], rule_props)
-                else:
-                    unique_rule_name = rule_name + "|" + uuid.uuid4().hex.upper()[0:6]
-                    self.rules[unique_rule_name] = RuleDef(
-                        globals()[rule_name], rule_props
-                    )
-        # assign default rules, if they are not already specified
-        if ctx.rules_dir and not self.is_rule_in_list("Replace_Asset"):
-            self.rules["Replace_Asset"] = RuleDef(globals()["Replace_Asset"], None)
+    def _add_default_rules(self) -> None:
+        """Add default rules if not already present."""
+        if self._ctx.rules_dir and not self._has_rule("ReplaceAsset"):
+            self.rules["ReplaceAsset"] = RuleDef(ReplaceAsset, None)
 
-    def is_rule_in_list(self, name):
-        for rule_name in self.rules:
-            if rule_name.startswith(name):
-                return True
+    def _has_rule(self, name: str) -> bool:
+        """Check if a rule with the given name exists.
 
-        return False
+        Args:
+            name: Name of the rule to check
 
-    def load_custom_rules(self):
+        Returns:
+            bool: True if rule exists, False otherwise
+        """
+        return any(rule_name.startswith(name) for rule_name in self.rules)
 
-        custom_rulez = {}
-        if self._ctx.rules_dir is not None:
-            custom_rules_path = os.path.join(os.getcwd(), self._ctx.rules_dir)
-            if not os.path.isdir(custom_rules_path):
-                if self._ctx.debug:
-                    print("Custom rules folder not found...ignoring")
-                return custom_rulez
-            sys.path.append(custom_rules_path)
-            custom_rules = fnmatch.filter(os.listdir(custom_rules_path), "*.py")
-            for r in custom_rules:
-                mod_name = r[:-3]
-                mod = __import__(mod_name, globals={})
-                class_ = getattr(mod, mod_name)
-                # TODO check if custom rule is of type rule before adding
-                custom_rulez[mod_name] = class_
+    def _load_custom_rules(self) -> Dict[str, Type[Rule]]:
+        """Load custom rules from the rules directory.
 
-        return custom_rulez
+        Returns:
+            Dictionary mapping rule names to rule classes
 
-    def execute(self, csv_line):
+        Raises:
+            ImportError: If custom rule module cannot be imported
+        """
+        custom_rules: Dict[str, Type[Rule]] = {}
 
-        final, tx = Rule_Init("init", self._ctx).execute(csv_line)
+        if not self._ctx.rules_dir:
+            return custom_rules
 
-        for key in self.rules:
+        rules_path = os.path.join(os.getcwd(), self._ctx.rules_dir)
+        if not os.path.isdir(rules_path):
+            if self._ctx.debug:
+                print("Custom rules folder not found...ignoring")
+            return custom_rules
+
+        sys.path.append(rules_path)
+
+        try:
+            for rule_file in fnmatch.filter(os.listdir(rules_path), RULE_FILE_PATTERN):
+                module_name = rule_file[:-3]
+                module = __import__(module_name, globals={})
+                rule_class = getattr(module, module_name)
+
+                # TODO: Add validation that rule_class inherits from Rule
+                custom_rules[module_name] = rule_class
+
+        except (ImportError, AttributeError) as e:
+            if self._ctx.debug:
+                print(f"Error loading custom rule: {e}")
+
+        return custom_rules
+
+    def execute(self, csv_line: Dict[str, str]) -> Transaction:
+        """Execute all rules on a CSV line.
+
+        Args:
+            csv_line: Dictionary containing CSV line data
+
+        Returns:
+            Processed Transaction object
+
+        Raises:
+            Exception: If rule execution fails
+        """
+        final, transaction = RuleInit("init", self._ctx).execute(csv_line)
+
+        for rule_name, rule_def in self.rules.items():
             if not final:
                 if self._ctx.debug:
-                    print("Executing rule: " + str(self.rules[key].rule))
-                rulez = self.rules[key].rule(key, self._ctx)
-                final, tx = rulez.execute(csv_line, tx, self.rules[key])
+                    print(f"Executing rule: {rule_def.rule}")
+                try:
+                    rule = rule_def.rule(rule_name, self._ctx)
+                    final, transaction = rule.execute(csv_line, transaction, rule_def)
+                except Exception as e:
+                    if self._ctx.debug:
+                        print(f"Error executing rule {rule_name}: {e}")
+                    raise
 
-        return tx
+        return transaction

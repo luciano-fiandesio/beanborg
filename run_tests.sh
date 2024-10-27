@@ -1,2 +1,5 @@
 #!/bin/bash -e
- PYTHONPATH=. pytest -s
+
+# pytest --capture=sys to show print statements
+
+PYTHONPATH=. pytest -s

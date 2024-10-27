@@ -28,7 +28,7 @@ rules:
   force_negative: true
   invert_negative: true
   ruleset:
-    - name: Ignore_By_Payee
+    - name: IgnoreByPayee
       ignore_payee:
         - alfa
         - beta

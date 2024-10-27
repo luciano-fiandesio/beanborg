@@ -1,36 +1,40 @@
-from beanborg.rule_engine.rules_engine import RuleEngine
+from beanborg.config import *
 from beanborg.rule_engine.Context import *
 from beanborg.rule_engine.decision_tables import *
-from beanborg.config import *
+from beanborg.rule_engine.rules_engine import RuleEngine
+
 
 def test_payee_replacement():
 
-    rule_engine = make_rule_engine('tests/files/bank1_replace_counterparty.yaml')
+    rule_engine = make_rule_engine("tests/files/bank1_replace_counterparty.yaml")
 
     entries = "31.10.2019,b,auszahlung,electro ford,x,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
     assert tx.payee == "Ford Auto"
 
+
 def test_asset_replacement():
 
-    rule_engine = make_rule_engine('tests/files/bank1_replace_asset.yaml')
+    rule_engine = make_rule_engine("tests/files/bank1_replace_asset.yaml")
     entries = "31.10.2019,b,auszahlung,electro ford,x,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
     assert tx.postings[0].account == "Assets:Bob:Savings"
 
+
 def test_expense_replacement():
 
-    rule_engine = make_rule_engine('tests/files/bank1_replace_expense.yaml')
+    rule_engine = make_rule_engine("tests/files/bank1_replace_expense.yaml")
     entries = "31.10.2019,b,auszahlung,freshfood Bonn,x,ZZ03100400000608903100".split(
         ","
     )
     tx = rule_engine.execute(entries)
     assert tx.postings[1].account == "Expenses:Groceries"
 
+
 def test_ignore():
 
-    rule_engine = make_rule_engine('tests/files/bank1_ignore_by_counterparty.yaml')
-    
+    rule_engine = make_rule_engine("tests/files/bank1_ignore_by_counterparty.yaml")
+
     entries = "31.10.2019,b,auszahlung,alfa,x,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
     assert tx == None
@@ -39,29 +43,36 @@ def test_ignore():
     tx = rule_engine.execute(entries)
     assert tx == None
 
+
 def test_ignore_at_position():
 
-    rule_engine = make_rule_engine('tests/files/bank1_ignore_at_pos.yaml')
+    rule_engine = make_rule_engine("tests/files/bank1_ignore_at_pos.yaml")
     entries = "31.10.2019,b,auszahlung,alfa,waiting,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
     assert tx == None
 
+
 def test_ignore_by_contains_string_at_position():
-    rule_engine = make_rule_engine('tests/files/bank1_ignore_contains_string_at_pos.yaml')
-    entries = "31.10.2019,b,auszahlung,alfa,this is waiting alfa,ZZ03100400000608903100".split(",")
+    rule_engine = make_rule_engine(
+        "tests/files/bank1_ignore_contains_string_at_pos.yaml"
+    )
+    entries = "31.10.2019,b,auszahlung,alfa,this is waiting alfa,ZZ03100400000608903100".split(
+        ","
+    )
     tx = rule_engine.execute(entries)
     assert tx == None
 
 
 def test_custom_rule():
 
-    rule_engine = make_rule_engine('tests/files/bank1_custom_rule.yaml')
+    rule_engine = make_rule_engine("tests/files/bank1_custom_rule.yaml")
     entries = "31.10.2019,b,Withdrawal,alfa,waiting,ZZ03100400000608903100".split(",")
     tx = rule_engine.execute(entries)
-    
+
     assert tx.postings[0].account == "Assets:UK:Alice:Savings"
     assert tx.postings[1].account == "Assets:UK:Alice:Cash"
-    
+
+
 def test_no_rulefile():
 
     rule_engine = RuleEngine(
@@ -77,7 +88,7 @@ def test_no_rulefile():
             account_pos=5,
             ruleset=None,
             force_account=None,
-            debug=False
+            debug=False,
         )
     )
 
@@ -87,9 +98,10 @@ def test_no_rulefile():
     # no exception - the transaction is empty
     assert tx
 
+
 def make_rule_engine(config_file):
     config = init_config(config_file, False)
-    
+
     return RuleEngine(
         Context(
             ruleset=config.rules.ruleset,
@@ -103,6 +115,6 @@ def make_rule_engine(config_file):
             narration_pos=-1,
             account_pos=5,
             force_account=None,
-            debug=False
+            debug=False,
         )
     )

@@ -1,4 +1,13 @@
+"""Transaction category prediction using machine learning.
+
+This module provides functionality for predicting transaction categories
+based on transaction descriptions and temporal features using a KNN classifier
+with SMOTE oversampling for handling imbalanced data.
+"""
+
 import os
+from datetime import date
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -12,23 +21,47 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
 class TransactionModel:
-    def __init__(self, training_data, data_file):
+    """Machine learning model for transaction categorization.
+
+    This class handles the training and prediction of transaction categories
+    using a KNN classifier with SMOTE oversampling. It includes functionality
+    for model training, prediction, and updating the training dataset.
+
+    Attributes:
+        training_data: DataFrame containing training transactions
+        data_file: Path to CSV file for storing transaction data
+        model: Trained classification pipeline
+        label_encoder: Encoder for transaction categories
+    """
+
+    def __init__(self, training_data: pd.DataFrame, data_file: str):
+        """Initialize the transaction model."""
         self.training_data = training_data
         self.data_file = data_file
         self._create_and_fit_model()
 
-    def _remove_single_sample_classes(self, X, y):
+    def _remove_single_sample_classes(
+        self, x: pd.DataFrame, y: pd.Series
+    ) -> Tuple[pd.DataFrame, pd.Series]:
         class_counts = y.value_counts()
         classes_to_keep = class_counts[class_counts >= 2].index
         mask = y.isin(classes_to_keep)
-        return X[mask], y[mask]
+        return x[mask], y[mask]
 
     def _create_and_fit_model(self):
-        X = self.training_data[["desc", "day_of_month", "day_of_week"]]
+        """Create and train the classification pipeline.
+
+        Creates a pipeline with:
+        1. Feature processing (text vectorization and scaling)
+        2. SMOTE oversampling for handling imbalanced classes
+        3. KNN classifier
+
+        """
+        x = self.training_data[["desc", "day_of_month", "day_of_week"]]
         y = self.training_data["cat"]
 
         # Remove classes with only one sample
-        X, y = self._remove_single_sample_classes(X, y)
+        x, y = self._remove_single_sample_classes(x, y)
 
         # Encode target labels
         self.label_encoder = LabelEncoder()
@@ -63,9 +96,23 @@ class TransactionModel:
         )
 
         # Fit the model
-        self.model.fit(X, y_encoded)
+        self.model.fit(x, y_encoded)
 
-    def predict(self, text, day_of_month, day_of_week, n=3):
+    def predict(
+        self, text: str, day_of_month: int, day_of_week: int, n: int = 3
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Predict top n categories for a transaction.
+
+        Args:
+            text: Transaction description
+            day_of_month: Day of month (1-31)
+            day_of_week: Day of week (0-6)
+            n: Number of top predictions to return
+
+        Returns:
+            Tuple of (predicted_categories, prediction_probabilities)
+
+        """
         # Create a DataFrame for the input text with the same structure as the training data
         data = {
             "desc": [text],
@@ -87,12 +134,15 @@ class TransactionModel:
         return top_classes, top_probabilities
 
     def update_training_data(
-        self, date, description, amount, category, day_of_month, day_of_week
-    ):
-        """
-        Updates the training data with a new or existing entry and retrains the model.
-        """
-
+        self,
+        date: date,
+        description: str,
+        amount: float,
+        category: str,
+        day_of_month: int,
+        day_of_week: int,
+    ) -> None:
+        """Updates the training data with a new or existing entry and retrains the model."""
         tokenized_description = self._tokenize_description(description)
 
         # Check if the description already exists
@@ -135,10 +185,16 @@ class TransactionModel:
         self._create_and_fit_model()
 
     def _append_to_csv(
-        self, date, description, amount, category, day_of_month, day_of_week
-    ):
-        """
-        Append the new entry to the CSV file without overwriting the whole file.
+        self,
+        date: date,
+        description: str,
+        amount: float,
+        category: str,
+        day_of_month: int,
+        day_of_week: int,
+    ) -> None:
+        """Append the new entry to the CSV file without overwriting the whole file.
+
         Ensures a newline is present before appending the new entry.
         """
         new_data = pd.DataFrame(
@@ -166,16 +222,16 @@ class TransactionModel:
 
     def _handle_existing_entry_conflict(
         self,
-        description,
-        existing_category,
-        date,
-        amount,
-        new_category,
-        day_of_month,
-        day_of_week,
+        description: str,
+        existing_category: str,
+        date: date,
+        amount: float,
+        new_category: str,
+        day_of_month: int,
+        day_of_week: int,
     ):
-        """
-        Handle the case where an entry with the same description exists but has a different category.
+        """Handle the case where an entry with the same description exists but has a different category.
+
         Allows the user to choose between updating, adding a new entry, or skipping.
         """
         print(
@@ -210,11 +266,15 @@ class TransactionModel:
             print("Update skipped.")
 
     def _add_new_entry(
-        self, date, description, amount, category, day_of_month, day_of_week
+        self,
+        date: date,
+        description: str,
+        amount: float,
+        category: str,
+        day_of_month: int,
+        day_of_week: int,
     ):
-        """
-        Add a new entry to the training data.
-        """
+        """Add a new entry to the training data."""
         new_data = pd.DataFrame(
             {
                 "date": [date],
@@ -229,10 +289,8 @@ class TransactionModel:
             [self.training_data, new_data], ignore_index=True
         )
 
-    def _tokenize_description(self, description):
-        """
-        Tokenize the description using CountVectorizer.
-        """
+    def _tokenize_description(self, description: str) -> str:
+        """Tokenize the description using CountVectorizer."""
         vectorizer = CountVectorizer(analyzer=str.split)
         tokens = vectorizer.build_analyzer()(description)
         return " ".join(tokens)

@@ -3,7 +3,8 @@ import re
 
 
 class StringUtils:
-
+    """Utility functions for strings."""
+    @staticmethod
     def strip_digits(str):
-        # return ''.join([c for c in str if not c.isdigit()])
+        """Strip digits from a string."""
         return re.sub("[^A-Z ]", "", str)

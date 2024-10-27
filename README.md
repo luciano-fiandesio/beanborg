@@ -112,8 +112,8 @@ rules:
   account: 565444499
   currency: USD
   ruleset:
-    - Replace_Asset
-    - Replace_Expense
+    - ReplaceAsset
+    - ReplaceExpense
 ```
 
 ### Structure of a configuration file
@@ -198,9 +198,9 @@ The `_ic` indicates `ignore case`.
 
 The following sections provide a detailed explanation of the rules available in Beanborg.
 
-#### Replace_Payee
+#### ReplacePayee
 
-The `Replace_Payee` rule is used to modify the name of a transaction’s counterparty. This is useful when you want to standardize or adjust the names in your financial records.
+The `ReplacePayee` rule is used to modify the name of a transaction’s counterparty. This is useful when you want to standardize or adjust the names in your financial records.
 
 This rule requires a lookup file named `payee.rules`, which should be placed in the directory defined by the `rules.rules_folder` option in the configuration file.
 
@@ -214,7 +214,7 @@ Given the following CSV transaction:
 
 You would follow these steps:
 
-1. Add the `Replace_Payee` rule to the list of rules in the configuration file for the relevant financial institution.
+1. Add the `ReplacePayee` rule to the list of rules in the configuration file for the relevant financial institution.
 2. In the `payee.rules` lookup file, add the following entry:
 
 ```
@@ -224,9 +224,9 @@ Fresh Food Inc.;equals;FRESH FOOD
 This will ensure that the counterparty "Fresh Food Inc." is replaced with "FRESH FOOD" in your Beancount ledger.
 
 
-#### Replace_Expense
+#### ReplaceExpense
 
-The `Replace_Expense` rule is used to assign an account to a transaction based on the value of the `counterparty` index from the CSV file. This rule is particularly helpful for categorizing transactions into the appropriate expense accounts.
+The `ReplaceExpense` rule is used to assign an account to a transaction based on the value of the `counterparty` index from the CSV file. This rule is particularly helpful for categorizing transactions into the appropriate expense accounts.
 
 This rule requires a lookup file named `account.rules`, which should be located in the directory defined by the `rules.rules_folder` option in the configuration file.
 
@@ -240,7 +240,7 @@ Given the following CSV transaction:
 
 You would follow these steps:
 
-1. Add the `Replace_Expense` rule to the list of rules in the configuration file for the relevant financial institution.
+1. Add the `ReplaceExpense` rule to the list of rules in the configuration file for the relevant financial institution.
 2. In the `account.rules` lookup file, add the following entry:
 
 ```
@@ -250,13 +250,13 @@ Fresh Food Inc.;equals;Expenses:Groceries
 This will ensure that any transaction with "Fresh Food Inc." as the counterparty will be assigned to the `Expenses:Grocery` account in your Beancount ledger.
 
 
-#### Replace_Asset
+#### ReplaceAsset
 
 
-The `Replace_Asset` rule assigns an "origin" account to a transaction based on the value of the `account` index in a CSV file. 
+The `ReplaceAsset` rule assigns an "origin" account to a transaction based on the value of the `account` index in a CSV file. 
 This rule is useful for ensuring that transactions are recorded with the correct source account in Beancount.
 
-The `Replace_Asset` rule is automatically added to the ruleset, even if it is not explicitly declared in the configuration file.
+The `ReplaceAsset` rule is automatically added to the ruleset, even if it is not explicitly declared in the configuration file.
 
 ##### Origin Account Resolution
 
@@ -305,7 +305,7 @@ rules:
   origin_account: Assets:Jim:Current
 ```
 
-#### Set_Accounts
+#### SetAccounts
 
 Assigns an "origin" account to a transaction, based on value of the `account` index of a CSV file row.
 This rule is useful to assign the correct source account of a CSV transaction. This rule is **implicitly added** to the ruleset, even if it doesn't get declared
@@ -321,7 +321,7 @@ As an example, let's take this CSV transaction. We want to import the transactio
 04.11.2020;04.11.2020;Direct Debit;"Fresh Food Inc.";-21,30;EUR;0000001;UK0000001444555
 ```
 
-Add the `Replace_Asset` to the `ruleset` and create an `asset.rules` file. Add the following snippet to the `asset.rules` file:
+Add the `ReplaceAsset` to the `ruleset` and create an `asset.rules` file. Add the following snippet to the `asset.rules` file:
 
 ```
 value;expression;result
@@ -348,9 +348,9 @@ rules:
   origin_account: Assets:Jim:Current
 ```
 
-#### Set_Accounts
+#### SetAccounts
 
-The `Set_Accounts` sets both  the **origin** and **destination** account for a given transaction, based on one or more values of a given CSV index.
+The `SetAccounts` sets both  the **origin** and **destination** account for a given transaction, based on one or more values of a given CSV index.
 This rule is useful for transactions like ATM withdrawals, where both accounts need to be defined.
 
 As an example, consider the following CSV transaction representing an ATM withdrawal:
@@ -381,7 +381,7 @@ For example, if you want the rule to apply to different forms of "withdrawal" in
 
 
 ```
-- name: Set_Accounts
+- name: SetAccounts
       from: Assets:Jim:Current
       to: Assets:Jim:Cash
       csv_index: 2
@@ -392,16 +392,16 @@ For example, if you want the rule to apply to different forms of "withdrawal" in
 - Wildcards are supported using `fnmatch`. In the example above, 
 the wildcard * is used to match any string that contains `Retiro` or `Ritiro`.
 
-#### Ignore_By_Payee
+#### IgnoreByPayee
 
-The `Ignore_By_Payee` rule can be used to ignore transactions based on the value of the `counterparty` index in a CSV file. 
+The `IgnoreByPayee` rule can be used to ignore transactions based on the value of the `counterparty` index in a CSV file. 
 This is useful when you want to exclude specific transactions from being imported into the ledger.
 
 
 Suppose you want to ignore any transactions where the counterparty is "Mc Donald" or "Best Shoes". You can configure the rule as follows:
 
 ```
-- name: Ignore_By_Payee
+- name: IgnoreByPayee
       ignore_payee:
         - Mc Donald
         - Best Shoes
@@ -410,21 +410,51 @@ Suppose you want to ignore any transactions where the counterparty is "Mc Donald
 The names of counterparties in the `ignore_payee` list are case-insensitive. This means both "Mc Donald" and "mc donald" would be matched and ignored.
 
 
-#### Ignore_By_StringAtPos
+#### IgnoreByStringAtPos
 
-The `Ignore_By_StringAtPos` rule allows you to ignore a transaction based on the value found at a specific index in the CSV file. This is useful for filtering out transactions that meet specific criteria in a particular column.
+The `IgnoreByStringAtPos` rule allows you to ignore a transaction based on the value found at a specific index in the CSV file. This is useful for filtering out transactions that meet specific criteria in a particular column.
 
 ### Example
 
 To ignore transactions where the value in index 4 (fifth column) matches `abc0102`, configure the rule like this:
 
 ```yaml
-- name: Ignore_By_StringAtPos
+- name: IgnoreByStringAtPos
   ignore_string_at_pos: 
     - abc0102;4
 ```
 - The index in the CSV file starts from `0`, so `4` refers to the fifth column.
 - The values specified in `ignore_string_at_pos` are case-insensitive, meaning `abc0102` and `ABC0102` would both be matched and ignored.
+
+#### IgnoreByContainsStringAtPos
+
+Ignores a transaction if the specified value is present in the specified index of the CSV file.
+The comparison is case-insensitive (meaning "mega" and "MEGA" will be matched).
+
+For instance, given this csv entry:
+
+`10.12.2022,mega supermarket,20US$`
+
+and this rule:
+
+```
+-  name: Ignore_By_ContainsStringAtPos
+        ignore_string_contains_at_pos:
+            - mega;1
+```
+
+The row will be ignored, because the string "mega" is part of the index at position 1.
+
+Note that this rule supports multiple string specifications.
+
+Example:
+```
+-  name: Ignore_By_ContainsStringAtPos
+    ignore_string_contains_at_pos:
+        - val;3
+        - another val;6
+```
+
 
 ### Custom rules
 

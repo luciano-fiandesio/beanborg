@@ -28,4 +28,4 @@ rules:
   force_negative: true
   invert_negative: true
   ruleset:
-    - name: Replace_Asset
+    - name: ReplaceAsset
