@@ -13,7 +13,6 @@ from beancount.parser.printer import format_entry
 from rich import print as rprint
 from rich.table import Table
 
-from beanborg.arg_parser import eval_args
 from beanborg.classification.classifier import Classifier
 from beanborg.config import init_config
 from beanborg.handlers.amount_handler import AmountHandler
@@ -32,6 +31,8 @@ from beanborg.utils.journal_utils import JournalUtils
 
 @dataclass
 class ImportStats:
+    """Statistics about the import process."""
+
     tx_in_file: int = 0
     processed: int = 0
     error: int = 0
@@ -42,43 +43,48 @@ class ImportStats:
 
 
 class Importer:
-    """
-    Initialize the import rule engine using the arguments from
-    the configuration file
-    """
+    """Initialize the import rule engine using the arguments from the configuration file."""
 
     def debug(self):
-        """check if the importer is started using the debug flag
+        """Check if the importer is started using the debug flag.
 
         Returns:
             boolean: is debug
         """
         return self.args.debug
 
-    def log_error(self, row):
-        """simple error logger"""
+    def _log_error(self, row):
+        """Simple error logger."""
         print(f'CSV: {",".join(row)}')
         rprint("-" * 80)
 
     def __init__(self):
+        """Initialize the importer."""
         self.stats = ImportStats()
         self.args = None
         self.accounts = set()
         self.txs = Transactions({})
 
-    def gen_datetime(self, min_year=1900, max_year=datetime.now().year):
-        """generate a datetime in format yyyy-mm-dd hh:mm:ss.000000"""
+    def _gen_datetime(self, min_year=1900, max_year=None):
+        """Generate a datetime in format yyyy-mm-dd hh:mm:ss.000000.
+
+        Args:
+            min_year: Minimum year for generated date (default: 1900)
+            max_year: Maximum year for generated date (default: current year)
+
+        Returns:
+            Random datetime between min_year and max_year
+        """
+        if max_year is None:
+            max_year = datetime.now().year
+
         start = datetime(min_year, 1, 1, 00, 00, 00)
         years = max_year - min_year + 1
         end = start + timedelta(days=365 * years)
         return start + (end - start) * SystemRandom.random(self)
 
     def init_rule_engine(self):
-        """
-        Initialize the import rule engine using the arguments from
-        the configuration file
-        """
-
+        """Initialize the import rule engine using the arguments from the configuration file."""
         folder = self.args.rules.rules_folder
 
         if (
@@ -111,7 +117,8 @@ class Importer:
             )
         )
 
-    def print_summary(self):
+    def _print_summary(self):
+        """Print a summary of the import process."""
         table = Table(title="Import Summary")
         table.add_column("Counter", style="magenta")
         table.add_column("Value", style="green", justify="right")
@@ -130,34 +137,31 @@ class Importer:
         rprint(table)
 
     def get_account(self, row):
-        """get the account value for the given csv line
-        or use the specified account
-        """
+        """Get the account value for the given csv line or use the specified account."""
         if self.args.rules.account:
             return self.args.rules.account
 
         return row[self.args.indexes.account]
 
     def get_currency(self, row):
-        """get the currency value for the given csv line or
-        use the specified currency
-        """
+        """Get the currency value for the given csv line or use the specified currency."""
         if self.args.rules.currency:
             return self.args.rules.currency
         return row[self.args.indexes.currency]
 
     def warn_hash_collision(self, row, md5):
+        """Warns about a hash collision."""
         rprint(
             "[red]warning[/red]: "
             "a transaction with identical hash exists in "
             "the journal: "
             f"[bold]{md5}[/bold]"
         )
-        self.log_error(row)
+        self._log_error(row)
         self.stats.hash_collision += 1
 
     def fetch_account_transactions(self, account):
-
+        """Fetch the transactions for the given account."""
         account_file = account + ".ldg"
         account_tx = (
             init_duplication_store(account_file, self.args.rules.bc_file)
@@ -166,44 +170,42 @@ class Importer:
         )
         return account_tx
 
-    def verify_accounts_count(self):
+    def _verify_accounts_count(self):
+        """Verify that only one account is present in the csv file."""
         if len(self.accounts) > 1 and len(self.transactions) > 0:
             rprint(
                 "[red]Expecting only one account in csv"
                 f"file, found: {str(len(self.accounts))}[/red]"
             )
 
-    def verify_unique_transactions(self, account):
-
+    def _verify_unique_transactions(self, account):
+        """Verify that the transactions are unique."""
         account_txs = self.fetch_account_transactions(account)
         pre_trans = []
-        for key in sorted(self.txs.getTransactions()):
+        for key in sorted(self.txs.get_transactions()):
             # check if the transaction being imported matches another
             # existing transaction
             # in the current ledger file.
-            tup = to_tuple(self.txs.getTransactions()[key])
+            tup = to_tuple(self.txs.get_transactions()[key])
             if hash_tuple(tup) in account_txs:
                 if print_duplication_warning(account_txs[hash_tuple(tup)]):
                     pre_trans.append(self.txs[key])
             else:
-                pre_trans.append(self.txs.getTransactions()[key])
+                pre_trans.append(self.txs.get_transactions()[key])
 
         return Transactions(pre_trans)
 
-    def write_tx(self, file_handler, tx):
+    def _write_tx(self, file_handler, tx):
         file_handler.write(format_entry(tx) + "\n")
 
-    def write_to_ledger(self, account_file, transactions):
+    def _write_to_ledger(self, account_file, transactions):
 
         with open(account_file, "a") as exc:
             for tx in transactions:
-                self.write_tx(exc, tx)
+                self._write_tx(exc, tx)
 
-    def fix_uncategorized_tx(self):
-        """
-        Fix uncategorized transactions in the ledger file.
-        """
-
+    def _fix_uncategorized_tx(self):
+        """Fix uncategorized transactions in the ledger file."""
         # Get target account
         account = self.args.rules.account
         txs = JournalUtils().get_transactions_by_account_name(
@@ -228,12 +230,12 @@ class Importer:
 
         with open(filename, "r") as file:
             content = file.read()
-            for tx in txs.getTransactions():
-                self.update_transaction(
+            for tx in txs.get_transactions():
+                self._update_transaction(
                     content, filename, tx.meta["md5"], tx.postings[1].account
                 )
 
-    def update_transaction(self, ledger_content, ledger_file, md5, new_category):
+    def _update_transaction(self, ledger_content, ledger_file, md5, new_category):
 
         # Find the transaction block with the given md5
         pattern = rf'(.*?md5: "{md5}".*?Expenses:Unknown.*?\n\n)'
@@ -256,13 +258,20 @@ class Importer:
         else:
             print(f"Skipping transaction with md5 {md5} not found.")
 
-    def import_transactions(self):
+    def import_transactions(
+        self, file: str, debug: bool = False, fix_only: bool = False
+    ):
+        """Import transactions from CSV to beancount.
 
-        options = eval_args("Parse bank csv file and import into beancount")
-        self.args = init_config(options.file, options.debug)
+        Args:
+            file: Path to the configuration file
+            debug: Enable debug mode
+            fix_only: Only fix uncategorized transactions
+        """
+        self.args = init_config(file, debug)
 
-        if options.fix_only:
-            self.fix_uncategorized_tx()
+        if fix_only:
+            self._fix_uncategorized_tx()
             return
 
         # transactions csv file to import
@@ -293,20 +302,20 @@ class Importer:
                     self.accounts.add(res_account)
 
                     if md5 not in tx_hashes:
-                        self.process_tx(row, md5, rule_engine)
+                        self._process_tx(row, md5, rule_engine)
                     else:
                         self.warn_hash_collision(row, md5)
 
                 except Exception as e:
                     print("error: " + str(e))
-                    self.log_error(row)
+                    self._log_error(row)
                     self.stats.error += 1
                     if self.debug():
                         traceback.print_exc()
 
-        self.verify_accounts_count()
+        self._verify_accounts_count()
         working_account = self.accounts.pop()
-        filtered_txs = self.verify_unique_transactions(working_account)
+        filtered_txs = self._verify_unique_transactions(working_account)
 
         self.stats.skipped_by_user = self.txs.count() - filtered_txs.count()
         self.stats.processed = filtered_txs.count()
@@ -320,27 +329,26 @@ class Importer:
 
         # write transactions to file
         account_file = working_account + ".ldg"
-        self.write_to_ledger(account_file, filtered_txs.getTransactions())
-        self.print_summary()
+        self._write_to_ledger(account_file, filtered_txs.get_transactions())
+        self._print_summary()
 
-    def validate(self, tx):
-        """
-        Handle the origin account: if the tx processed by the
-        rules engin has no origin account, try to assign one
-        from the property file: args.rules.origin_account
+    def _validate(self, tx):
+        """Handle the origin account.
+
+        if the tx processed by the rules engine has no origin account,
+        try to assign one from the property file: args.rules.origin_account.
         """
         if tx.postings[0].account is None:
             raise Exception(
                 "Unable to resolve the origin account for this transaction, "
-                "please check that the `Replace_Asset` rule "
+                "please check that the `ReplaceAsset` rule "
                 "is in use for this account or set the "
                 " `origin_account` property "
                 "in the config file."
             )
-
         return tx
 
-    def enrich(self, row, tx, tx_date, md5):
+    def _enrich(self, row, tx, tx_date, md5):
 
         tx_meta = {"csv": ",".join(row), "md5": md5}
 
@@ -370,7 +378,7 @@ class Importer:
 
         return tx
 
-    def process_tx(self, row, md5, rule_engine):
+    def _process_tx(self, row, md5, rule_engine):
 
         tx = rule_engine.execute(row)
 
@@ -383,13 +391,13 @@ class Importer:
                 row[self.args.indexes.date].strip(), self.args.csv.date_format
             )
 
-            tx = self.validate(self.enrich(row, tx, tx_date, md5))
+            tx = self._validate(self._enrich(row, tx, tx_date, md5))
 
             # generate a key based on:
             # - the tx date
             # - a random time (tx time is not important, but date is!)
-            key = str(tx_date) + str(self.gen_datetime().time())
-            self.txs.getTransactions()[key] = tx
+            key = str(tx_date) + str(self._gen_datetime().time())
+            self.txs.get_transactions()[key] = tx
 
         else:
             self.stats.ignored_by_rule += 1

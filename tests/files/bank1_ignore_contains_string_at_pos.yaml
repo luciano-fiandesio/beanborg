@@ -28,6 +28,6 @@ rules:
   force_negative: true
   invert_negative: true
   ruleset:
-    - name: Ignore_By_ContainsStringAtPos
+    - name: IgnoreByContainsStringAtPos
       ignore_string_contains_at_pos:
         - waiting;4

@@ -5,22 +5,21 @@ from beancount.core.getters import get_accounts
 
 
 class JournalUtils:
-
-    def get_entries(self, journal):
-        """
-        Load in-memory all the entries of the provided ledger.
-        """
+    """Utility functions for the Beancount journal."""
+    @staticmethod
+    def _get_entries(journal):
+        """Load in-memory all the entries of the provided ledger."""
         entries, _, _ = loader.load_file(journal)
         return entries
 
-    def transaction_hashes(self, journal):
-        """
-        Load in-memory all the hashes (md5 property) of the provided ledger.
+    @staticmethod
+    def transaction_hashes(journal):
+        """Load in-memory all the hashes (md5 property) of the provided ledger.
+
         This is required for the duplication detecting algo
         """
-
         md5s = []
-        entries = self.get_entries(journal)
+        entries = JournalUtils._get_entries(journal)
         for entry in entries:
             if isinstance(entry, Transaction):
                 md5 = entry.meta.get("md5", "")
@@ -28,15 +27,15 @@ class JournalUtils:
                     md5s.append(md5)
         return md5s
 
-    def get_accounts(self, journal):
+    @staticmethod
+    def get_accounts(journal):
+        """Get all accounts from the provided ledger."""
+        return get_accounts(JournalUtils._get_entries(journal))
 
-        return get_accounts(self.get_entries(journal))
-
-    def get_transactions_by_account_name(self, journal, account):
-        """
-        Get all transactions for a given account name.
-        """
-        entries = self.get_entries(journal)
+    @staticmethod
+    def get_transactions_by_account_name(journal, account):
+        """Get all transactions for a given account name."""
+        entries = JournalUtils._get_entries(journal)
         txs = []
         for entry in entries:
             if isinstance(entry, Transaction):

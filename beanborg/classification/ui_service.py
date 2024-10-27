@@ -8,10 +8,12 @@ from rich.syntax import Syntax
 
 
 class UIService:
+    """UI service for transaction classification."""
     @staticmethod
     def display_transaction(
         tx, top_labels: List[str], top_probs: List[float], chatgpt_prediction: str
     ):
+        """Display the transaction with the predictions."""
         console = Console()
         console.clear()
 

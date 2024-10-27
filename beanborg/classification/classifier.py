@@ -20,8 +20,9 @@ from beanborg.utils.string_utils import StringUtils
 
 
 class Classifier:
-
+    """Classify transactions using a machine learning model or a LLM."""
     def __init__(self, data="training_data.csv", use_llm=False, bc_file=None):
+        """Initialize the classifier."""
         self.trainingDataFile = data
         self.use_llm = use_llm
         self.bc_file = bc_file
@@ -35,34 +36,34 @@ class Classifier:
         self.gpt_service = GPTService(self.use_llm)
         self.ui_service = UIService()
 
-    def has_no_category(self, tx, args) -> bool:
+    def _has_no_category(self, tx, args) -> bool:
         return tx.postings[1].account == args.rules.default_expense
 
-    def get_day_of_month(self, date):
+    def _get_day_of_month(self, date):
         return pd.to_datetime(date).day
 
-    def get_day_of_week(self, date):
+    def _get_day_of_week(self, date):
         return pd.to_datetime(date).dayofweek
 
-    def get_predictions(self, text, day_of_month, day_of_week):
+    def _get_predictions(self, text, day_of_month, day_of_week):
 
         if self.model is None:
-            return [], [], self.get_llm_prediction(text)
+            return [], [], self._get_llm_prediction(text)
 
         # Use the TransactionModel for predictions
         top_labels, top_probs = self.model.predict(text, day_of_month, day_of_week)
 
-        alternative_label = self.get_llm_prediction(text)
+        alternative_label = self._get_llm_prediction(text)
 
         return top_labels, top_probs, alternative_label
 
-    def confirm_classification(self, txs, args):
+    def _confirm_classification(self, txs, args):
         return Confirm.ask(
             f"\n[red]You have [bold]{txs.count_no_category(args.rules.default_expense)}[/bold] "
             f"transactions without category, do you want to fix them now?[/red]"
         )
 
-    def get_llm_prediction(self, text):
+    def _get_llm_prediction(self, text):
 
         if self.use_llm:
             # This function queries the GPT service for a label prediction based on the provided text.
@@ -75,26 +76,26 @@ class Classifier:
 
         return alternative_label
 
-    def process_transaction(self, tx, index, txs, args):
+    def _process_transaction(self, tx, index, txs, args):
         stripped_text = StringUtils.strip_digits(tx.payee.upper())
-        day_of_month = self.get_day_of_month(tx.date)
-        day_of_week = self.get_day_of_week(tx.date)
+        day_of_month = self._get_day_of_month(tx.date)
+        day_of_week = self._get_day_of_week(tx.date)
 
-        top_labels, top_probs, chatgpt_prediction = self.get_predictions(
+        top_labels, top_probs, chatgpt_prediction = self._get_predictions(
             stripped_text, day_of_month, day_of_week
         )
         self.ui_service.display_transaction(
             tx, top_labels, top_probs, chatgpt_prediction
         )
 
-        selected_category = self.get_user_selection(
+        selected_category = self._get_user_selection(
             top_labels, chatgpt_prediction, args
         )
         if selected_category is None:
             return "quit"
         elif selected_category:
-            narration = self.get_user_narration()
-            self.update_transaction(tx, index, txs, selected_category, narration)
+            narration = self._get_user_narration()
+            self._update_transaction(tx, index, txs, selected_category, narration)
             amount = tx.postings[0].units.number
             if selected_category != args.rules.default_expense:
                 if self.model is not None:
@@ -119,16 +120,16 @@ class Classifier:
 
             return "continue"
 
-    def get_user_narration(self):
+    def _get_user_narration(self):
         narration = input(
             "Enter a comment for the transaction (press Enter to skip): "
         ).strip()
         return narration if narration else None
 
-    def get_user_selection(self, top_labels, chatgpt_prediction, args):
+    def _get_user_selection(self, top_labels, chatgpt_prediction, args):
         options = len(top_labels) + (1 if chatgpt_prediction else 0)
         if options == 0:
-            return self.handle_custom_input(args)
+            return self._handle_custom_input(args)
 
         while True:
             selected_number = input(
@@ -137,22 +138,22 @@ class Classifier:
             if selected_number.lower() == "q":
                 return None
             if selected_number.isdigit():
-                return self.handle_numeric_selection(
+                return self._handle_numeric_selection(
                     int(selected_number), top_labels, chatgpt_prediction
                 )
-            return self.handle_custom_input(args)
+            return self._handle_custom_input(args)
 
-    def handle_numeric_selection(self, selected_number, top_labels, chatgpt_prediction):
+    def _handle_numeric_selection(self, selected_number, top_labels, chatgpt_prediction):
         if chatgpt_prediction and selected_number == len(top_labels) + 1:
             return chatgpt_prediction
         elif 1 <= selected_number <= len(top_labels):
             return top_labels[selected_number - 1]
         return None
 
-    def handle_custom_input(self, args):
+    def _handle_custom_input(self, args):
         accounts = JournalUtils().get_accounts(args.rules.bc_file)
         account_completer = CustomFuzzyWordCompleter(accounts)
-        kb = self.create_key_bindings()
+        kb = self._create_key_bindings()
         selected_category = prompt(
             "Enter account: ",
             completer=account_completer,
@@ -164,10 +165,10 @@ class Classifier:
             print(
                 "[bold red]Invalid account. Please select a valid account.[/bold red]"
             )
-            return self.handle_custom_input(args)
+            return self._handle_custom_input(args)
         return selected_category
 
-    def create_key_bindings(self):
+    def _create_key_bindings(self):
         kb = KeyBindings()
 
         @kb.add(Keys.Backspace)
@@ -177,7 +178,7 @@ class Classifier:
 
         return kb
 
-    def update_transaction(self, tx, index, txs, category, narration=None):
+    def _update_transaction(self, tx, index, txs, category, narration=None):
         posting = Posting(category, None, None, None, None, None)
         new_postings = [tx.postings[0]] + [posting]
         new_tx = tx._replace(postings=new_postings)
@@ -186,11 +187,12 @@ class Classifier:
         txs.getTransactions()[index] = new_tx
 
     def classify(self, txs, args):
-        if not self.confirm_classification(txs, args):
+        """Classify transactions."""
+        if not self._confirm_classification(txs, args):
             return
 
         for i, tx in enumerate(txs.getTransactions()):
-            if self.has_no_category(tx, args):
-                result = self.process_transaction(tx, i, txs, args)
+            if self._has_no_category(tx, args):
+                result = self._process_transaction(tx, i, txs, args)
                 if result == "quit":
                     break

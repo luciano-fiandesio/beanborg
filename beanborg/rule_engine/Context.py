@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Context:
+    """Context for transaction processing."""
+
     # ruleset
     ruleset: []
     # custom rules folder
@@ -25,7 +27,7 @@ class Context:
     # the index of the narration field in the csv file
     narration_pos: int
     # if the CSV file has no account id, use "account" to lookup the Account
-    # Origin when using the Replace_Asset rule
+    # Origin when using the ReplaceAsset rule
     account: str
     # Force the Account Origin to the value specifed
     force_account: str
