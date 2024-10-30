@@ -259,7 +259,11 @@ class Importer:
             print(f"Skipping transaction with md5 {md5} not found.")
 
     def import_transactions(
-        self, file: str, debug: bool = False, fix_only: bool = False
+        self,
+        file: str,
+        debug: bool = False,
+        fix_only: bool = False,
+        default_csv: bool = False,
     ):
         """Import transactions from CSV to beancount.
 
@@ -267,7 +271,12 @@ class Importer:
             file: Path to the configuration file
             debug: Enable debug mode
             fix_only: Only fix uncategorized transactions
+            default_csv: Use the default csv file configuration
         """
+
+        if (default_csv):
+            print("woooooow!")
+            return
         try:
             self.args = init_config(file, debug)
 
