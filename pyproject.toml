@@ -10,7 +10,7 @@ repository = "https://github.com/luciano-fiandesio/beanborg"
 
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.10"
 beancount = "^3.0.0"
 pyyaml = "^6.0.2"
 rich = "^13.9.3"
