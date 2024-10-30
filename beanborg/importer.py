@@ -274,7 +274,7 @@ class Importer:
             default_csv: Use the default csv file configuration
         """
 
-        if (default_csv):
+        if default_csv:
             print("woooooow!")
             return
         try:
